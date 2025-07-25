@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+
+  <meta charset="utf-8"/>
+  <title>tx_ki summary</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"/>
+  <style></style>
+</head>
+<html>
+  <body style="margin:40px;">
+    <h2>Data Frame Summary</h2>
+    <h3>tx_ki_selected</h3>
+    <p>
+      <strong>Dimensions: </strong>
+      58082 x 48
+    </p>
+    <hr/>
+    <table class="table table-striped table-hover" style="margin-left: auto; margin-right: auto;">
+ <thead>
+  <tr>
+   <th style="text-align:left;"> Variable </th>
+   <th style="text-align:center;"> Type </th>
+   <th style="text-align:center;"> Valid </th>
+   <th style="text-align:center;"> Missing </th>
+   <th style="text-align:left;"> Stats / Top Levels </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> DON_AGE </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=39.39; SD=15.02<br>Min=0; Med=40; Max=86 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_AGE_IN_MONTHS </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=478.08; SD=180.25<br>Min=0; Med=481; Max=1034 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_HGT_CM </td>
+   <td style="text-align:center;"> numeric </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=169.58; SD=16.54<br>Min=46; Med=172.72; Max=211 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_WGT_KG </td>
+   <td style="text-align:center;"> numeric </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=83.43; SD=25.24<br>Min=3; Med=81.6; Max=284 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_RACE </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=158.8; SD=356.87<br>Min=8; Med=8; Max=1024 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_RACE_SRTR </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> WHITE: 47819 (82.33%)<br>BLACK: 7951 (13.69%)<br>ASIAN: 1407 (2.42%)<br>NATIVE: 454 (0.78%)<br>MULTI: 279 (0.48%)<br>PACIFIC: 172 (0.30%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_ETHNICITY_SRTR </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> NLATIN: 49276 (84.84%)<br>LATINO: 8806 (15.16%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_HTN </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 57368 (98.77%) </td>
+   <td style="text-align:center;"> 714 (1.23%) </td>
+   <td style="text-align:left;"> Mean=0.29; SD=0.46<br>Min=0; Med=0; Max=1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_HIST_HYPERTEN </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=14.07; SD=110.78<br>Min=1; Med=1; Max=998 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_HIST_DIAB </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=12.48; SD=105.58<br>Min=1; Med=1; Max=998 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_CREAT </td>
+   <td style="text-align:center;"> numeric </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=1.36; SD=1.32<br>Min=0.02; Med=0.94; Max=35 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_ANTI_HCV </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> N: 52071 (89.65%)<br>P: 6001 (10.33%)<br>I: 6 (&lt;0.1%)<br>ND: 4 (&lt;0.1%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_CAD_DON_COD </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=31.55; SD=169.67<br>Min=1; Med=2; Max=999 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_DEATH_MECH </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=27.73; SD=141.42<br>Min=1; Med=7; Max=997 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_DEATH_CIRCUM </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=133.07; SD=333.44<br>Min=1; Med=6; Max=997 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_CARDIAC_ARREST_AFTER_DEATH </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> N: 39461 (67.94%)<br>: 15680 (27.00%)<br>Y: 2941 (5.06%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_NON_HR_BEAT </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> N: 42251 (72.74%)<br>Y: 15831 (27.26%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_TY </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> C: 58082 (100.00%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_AGE_AT_LISTING </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=51.99; SD=13.22<br>Min=11; Med=54; Max=88 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_AGE_IN_MONTHS_AT_LISTING </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=629.36; SD=158.54<br>Min=139; Med=652; Max=1061 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_GENDER </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> M: 35146 (60.51%)<br>F: 22936 (39.49%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_RACE </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 46933 (80.80%) </td>
+   <td style="text-align:center;"> 11149 (19.20%) </td>
+   <td style="text-align:left;"> Mean=18.39; SD=19.56<br>Min=8; Med=16; Max=248 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_RACE_SRTR </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> WHITE: 32802 (56.48%)<br>BLACK: 19383 (33.37%)<br>ASIAN: 4500 (7.75%)<br>NATIVE: 560 (0.96%)<br>MULTI: 512 (0.88%)<br>PACIFIC: 325 (0.56%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_ETHNICITY_SRTR </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> NLATIN: 46365 (79.83%)<br>LATINO: 11717 (20.17%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_ABO </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> O: 26601 (45.80%)<br>A: 19593 (33.73%)<br>B: 8439 (14.53%)<br>AB: 2895 (4.98%)<br>A1: 440 (0.76%)<br>A2: 53 (&lt;0.1%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_DIAB </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 24 (&lt;0.1%) </td>
+   <td style="text-align:center;"> 58058 (&gt;99.9%) </td>
+   <td style="text-align:left;"> Mean=1; SD=0<br>Min=1; Med=1; Max=1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_DIAB_TY </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58081 (&gt;99.9%) </td>
+   <td style="text-align:center;"> 1 (&lt;0.1%) </td>
+   <td style="text-align:left;"> Mean=1.88; SD=9.3<br>Min=1; Med=1; Max=998 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_LISTING_DT </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> 2018-05-31: 62 (0.11%)<br>2018-09-13: 62 (0.11%)<br>2019-02-22: 61 (0.11%)<br>2019-07-03: 61 (0.11%)<br>2018-02-02: 59 (0.10%)<br>2018-04-26: 59 (0.10%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_PREV_TX </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=0.02; SD=0.16<br>Min=0; Med=0; Max=1 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> CAN_PREV_KI </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=0; SD=0<br>Min=0; Med=0; Max=0 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> REC_AGE_AT_TX </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=54.22; SD=13.11<br>Min=18; Med=56; Max=89 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> REC_AGE_IN_MONTHS_AT_TX </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> Mean=656.14; SD=157.25<br>Min=216; Med=681; Max=1068 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> REC_TX_DT </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> 2020-11-13: 72 (0.12%)<br>2021-06-04: 72 (0.12%)<br>2020-07-17: 71 (0.12%)<br>2021-05-06: 70 (0.12%)<br>2020-07-18: 68 (0.12%)<br>2021-02-12: 68 (0.12%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> REC_BMI </td>
+   <td style="text-align:center;"> numeric </td>
+   <td style="text-align:center;"> 57404 (98.83%) </td>
+   <td style="text-align:center;"> 678 (1.17%) </td>
+   <td style="text-align:left;"> Mean=76.67; SD=4215.57<br>Min=1.38; Med=28.29; Max=645000 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> REC_CREAT </td>
+   <td style="text-align:center;"> numeric </td>
+   <td style="text-align:center;"> 57806 (99.52%) </td>
+   <td style="text-align:center;"> 276 (0.48%) </td>
+   <td style="text-align:left;"> Mean=8.21; SD=3.84<br>Min=0.23; Med=7.74; Max=36.02 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> REC_DISCHRG_CREAT </td>
+   <td style="text-align:center;"> numeric </td>
+   <td style="text-align:center;"> 58014 (99.88%) </td>
+   <td style="text-align:center;"> 68 (0.12%) </td>
+   <td style="text-align:left;"> Mean=4.45; SD=3.26<br>Min=0.07; Med=3.57; Max=30.62 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> REC_POSTX_LOS </td>
+   <td style="text-align:center;"> integer </td>
+   <td style="text-align:center;"> 58075 (&gt;99.9%) </td>
+   <td style="text-align:center;"> 7 (&lt;0.1%) </td>
+   <td style="text-align:left;"> Mean=7.27; SD=13.05<br>Min=0; Med=5; Max=555 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> REC_DISCHRG_DT </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 57981 (99.83%) </td>
+   <td style="text-align:center;"> 101 (0.17%) </td>
+   <td style="text-align:left;"> 2020-07-22: 79 (0.14%)<br>2021-07-06: 77 (0.13%)<br>2019-10-15: 74 (0.13%)<br>2021-06-16: 74 (0.13%)<br>2018-11-26: 73 (0.13%)<br>2021-06-07: 73 (0.13%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> TFL_DEATH_DT </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 8553 (14.73%) </td>
+   <td style="text-align:center;"> 49529 (85.27%) </td>
+   <td style="text-align:left;"> 2022-02-07: 26 (0.30%)<br>2022-01-24: 21 (0.25%)<br>2022-01-31: 20 (0.23%)<br>2022-02-06: 20 (0.23%)<br>2021-10-04: 19 (0.22%)<br>2022-01-26: 19 (0.22%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> PERS_SSA_DEATH_DT </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 1319 (2.27%) </td>
+   <td style="text-align:center;"> 56763 (97.73%) </td>
+   <td style="text-align:left;"> 2022-01-22: 6 (0.45%)<br>2022-01-26: 6 (0.45%)<br>2022-02-24: 6 (0.45%)<br>2021-08-14: 5 (0.38%)<br>2021-09-16: 5 (0.38%)<br>2022-01-10: 5 (0.38%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> PERS_OPTN_DEATH_DT </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 9901 (17.05%) </td>
+   <td style="text-align:center;"> 48181 (82.95%) </td>
+   <td style="text-align:left;"> 2022-02-07: 29 (0.29%)<br>2022-02-06: 23 (0.23%)<br>2022-01-24: 21 (0.21%)<br>2022-01-26: 20 (0.20%)<br>2022-01-31: 20 (0.20%)<br>2022-02-11: 20 (0.20%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> REC_FAIL_DT </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 369 (0.64%) </td>
+   <td style="text-align:center;"> 57713 (99.36%) </td>
+   <td style="text-align:left;"> 2020-01-06: 4 (1.08%)<br>2018-08-20: 3 (0.81%)<br>2019-04-26: 3 (0.81%)<br>2019-09-27: 3 (0.81%)<br>2021-05-05: 3 (0.81%)<br>2021-06-17: 3 (0.81%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> TFL_LAFUDATE </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> 2024-08-26: 197 (0.34%)<br>2024-04-10: 194 (0.33%)<br>2024-05-06: 194 (0.33%)<br>2024-08-05: 187 (0.32%)<br>2024-03-18: 185 (0.32%)<br>2024-05-08: 185 (0.32%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> TFL_LASTATUS </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> A: 44718 (76.99%)<br>D: 8553 (14.73%)<br>N: 3036 (5.23%)<br>L: 1737 (2.99%)<br>R: 37 (&lt;0.1%)<br>: 1 (&lt;0.1%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> TFL_ENDTXFU </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> 2024-09-11: 202 (0.35%)<br>2024-11-12: 202 (0.35%)<br>2024-07-20: 201 (0.35%)<br>2024-11-01: 200 (0.34%)<br>2024-10-10: 198 (0.34%)<br>2024-09-01: 196 (0.34%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> DON_RECOV_DT </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 58082 (100.00%) </td>
+   <td style="text-align:center;"> 0 (0.00%) </td>
+   <td style="text-align:left;"> 2020-07-18: 71 (0.12%)<br>2020-11-12: 71 (0.12%)<br>2021-05-06: 70 (0.12%)<br>2021-06-03: 70 (0.12%)<br>2020-08-05: 67 (0.12%)<br>2021-06-12: 67 (0.12%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> TFL_GRAFT_DT </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 4576 (7.88%) </td>
+   <td style="text-align:center;"> 53506 (92.12%) </td>
+   <td style="text-align:left;"> 2021-03-10: 10 (0.22%)<br>2022-02-01: 10 (0.22%)<br>2022-02-14: 10 (0.22%)<br>2022-06-01: 9 (0.20%)<br>2023-08-25: 9 (0.20%)<br>2021-04-15: 8 (0.17%) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> PERS_RETX </td>
+   <td style="text-align:center;"> character </td>
+   <td style="text-align:center;"> 709 (1.22%) </td>
+   <td style="text-align:center;"> 57373 (98.78%) </td>
+   <td style="text-align:left;"> 2021-07-20: 4 (0.56%)<br>2023-12-06: 4 (0.56%)<br>2020-11-11: 3 (0.42%)<br>2020-12-06: 3 (0.42%)<br>2021-08-04: 3 (0.42%)<br>2021-10-13: 3 (0.42%) </td>
+  </tr>
+</tbody>
+</table>
+  </body>
+</html>
+</html>
