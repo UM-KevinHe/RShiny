@@ -13,6 +13,7 @@ library(shiny)
 library(tigris)
 library(readxl)
 library(haven)
+library(readr)
 library(sf)
 library(htmltools)
 
@@ -21,8 +22,12 @@ safe_includeHTML <- function(path) {
                 collapse = "\n")
   # strip any bootstrap 3 link
   html <- gsub('<link[^>]*bootstrap[^>]*>', "", html, perl = TRUE)
+  html <- gsub('<script[^>]*bootstrap[^>]*>[\\s\\S]*?</script>', '', html, perl = TRUE)
+  html <- gsub('<script[^>]*jquery[^>]*>[\\s\\S]*?</script>',   '', html, perl = TRUE)
+  html <- gsub('<link[^>]*font[-]?awesome[^>]*>', '', html, perl = TRUE)
   HTML(html)
 }
+
 
 
 #setwd("C:/Users/vince/OneDrive/Desktop/Rshiny")
@@ -63,7 +68,9 @@ vars <- c(
   "Deceased Donor Transplant Rate" = "TMR_CadTxR_c"
 )
 # -------------------- Load data --------------------
-tx_ki <- read_csv("data/tx_ki_synthetic.csv")      # or readRDS("data/tx_ki.rds")
+
+excel_path <- "data/csrs_final_tables_2505_KI.xls"
+sheet_list <- excel_sheets(excel_path)
 
 # -------------------- UI ---------------------------
 ui <- navbarPage(
@@ -101,19 +108,67 @@ ui <- navbarPage(
   # ),
 
   tabPanel(
-    "Data Dictionary (HTML)",
+    "Data Dictionary",
     safe_includeHTML("www/dataDictionary_utf8.html")
   ),
 
-  # --- 3. Summary Report (HTML) -------------
+  # # --- 3. Summary Report (HTML) -------------
+  # tabPanel(
+  #   "Summary Report (HTML)",
+  #   tags$iframe(
+  #     src   = "tx_ki_summary_custom1.html",
+  #     style = "width:100%; height:1100px; border:none;"
+  #   )
+  # ),
+
   tabPanel(
-    "Summary Report (HTML)",
-    tags$iframe(
-      src   = "tx_ki_summary_custom1.html",
-      style = "width:100%; height:1100px; border:none;"
+    "Data Summary Report",
+    sidebarLayout(
+      sidebarPanel(
+        selectInput(
+          inputId  = "rep_year",
+          label    = "Transplant Year (REC_TX_DT)",
+          choices  = c("1987-2025 (Full)", "2015-2025 (Frequently Used)", "2015", "2016", "2017"
+                       , "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"),
+          selected = "1987-2025 (Full)"
+        ),
+        width = 2
+      ),
+      mainPanel(
+        uiOutput("report_ui")
+      )
     )
   ),
 
+
+  # # --- 3. KDPI and EPTS -------------
+  # tabPanel(
+  #   "KDPI and EPTS",
+  #   includeHTML("www/KDPI-and-EPTS-html.html")
+  # ),
+
+  # --- 3. KDPI and EPTS -------------
+  tabPanel(
+    "KDPI and EPTS",
+    tags$head(
+      tags$script(src = "iframeResizer.min.js")
+    ),
+    tags$iframe(
+      src   = "KDPI-and-EPTS-html.html",
+      style = "width:100%; height:1100px; border:none;"
+    ),
+    # activate resizer
+    tags$script("iFrameResize({log:false, checkOrigin:false}, '#rep');")
+  ),
+
+  # # --- 3. KDPI and EPTS -------------
+  # tabPanel(
+  #   "KDPI and EPTS",
+  #   tags$iframe(
+  #     src   = "KDPI-and-EPTS-html.html",
+  #     style = "width:100%; height:1100px; border:none;"
+  #   )
+  # ),
   # tabPanel(
   #   "Summary Report (HTML)",
   #   safe_includeHTML("www/tx_ki_summary_custom.html")
@@ -129,10 +184,10 @@ ui <- navbarPage(
   #          )
   # ),
 
-  # --- 4. Interactive Dictionary (DT table) ---
-  tabPanel("Data Dictionary",
-           DTOutput("dict_tbl")
-  ),
+  # # --- 4. Interactive Dictionary (DT table) ---
+  # tabPanel("Data Dictionary",
+  #          DTOutput("dict_tbl")
+  # ),
 
   # --- 5. Summary Statistics (interactive) ---
   # tabPanel("Summary Statistics",
@@ -151,7 +206,8 @@ ui <- navbarPage(
     sidebarLayout(
       sidebarPanel(
         selectInput("var_name", "Choose a variable", choices = c("KDPI","eGFR","Transplant Rate","Post-Transplant Survival",
-                                                                "Pre-transplant Mortality Rate"))
+                                                                "Pre-transplant Mortality Rate")),
+        width = 2
       ),
       mainPanel(
         fluidRow(
@@ -168,6 +224,28 @@ ui <- navbarPage(
     )
   ),
 
+  tabPanel(
+    "Center Data",
+    sidebarLayout(
+      sidebarPanel(
+        ## drop-down that looks like a big button (optional shinyWidgets) ----
+        selectInput(
+          inputId  = "sheet",
+          label    = "Select worksheet",
+          choices  = sheet_list,
+          selected = sheet_list[1]
+        ),
+        width = 2
+      ),
+      mainPanel(
+        tabsetPanel(
+          tabPanel("Data table",   DTOutput("tbl")),
+          tabPanel("Summary",      verbatimTextOutput("summary")),
+          tabPanel("Histogram",    uiOutput("plot_ui"))
+        )
+      )
+    )
+  ),
   # --- Center Geographic Map ---
   tabPanel("Center Map",
            fluidRow(
@@ -193,22 +271,22 @@ ui <- navbarPage(
                #plotOutput("histplot", height = 300))
            )
   ),
-  # --- 7. Explorer (plots) ---
-  tabPanel("Explorer",
-           sidebarLayout(
-             sidebarPanel(
-               selectInput("var_plot", "Variable to plot", choices = names(tx_ki)),
-               checkboxInput("by_group", "Display by group"),
-               conditionalPanel(
-                 condition = "input.by_group == true",
-                 selectInput("grp_var", "Grouping variable", choices = names(tx_ki))
-               )
-             ),
-             mainPanel(
-               plotOutput("dist_plot", height = "500px")
-             )
-           )
-  ),
+  # # --- 7. Explorer (plots) ---
+  # tabPanel("Explorer",
+  #          sidebarLayout(
+  #            sidebarPanel(
+  #              selectInput("var_plot", "Variable to plot", choices = names(tx_ki)),
+  #              checkboxInput("by_group", "Display by group"),
+  #              conditionalPanel(
+  #                condition = "input.by_group == true",
+  #                selectInput("grp_var", "Grouping variable", choices = names(tx_ki))
+  #              )
+  #            ),
+  #            mainPanel(
+  #              plotOutput("dist_plot", height = "500px")
+  #            )
+  #          )
+  # ),
   # --- 8. Outcome Exploration ---
   tabPanel("Outcome Exploration",
            sidebarLayout(
@@ -242,28 +320,129 @@ ui <- navbarPage(
 # -------------------- Server -----------------------
 server <- function(input, output, session) {
 
-  ## 1. Data dictionary ----
-  dict <- tibble(
-    Variable = names(tx_ki),
-    Class    = sapply(tx_ki, class),
-    Missing  = colSums(is.na(tx_ki)),
-    Examples = sapply(tx_ki, \(x) paste0(head(unique(x), 3), collapse = ", "))
-  )
+# ## 1. Data dictionary ----
+# dict <- tibble(
+#   Variable = names(tx_ki),
+#   Class    = sapply(tx_ki, class),
+#   Missing  = colSums(is.na(tx_ki)),
+#   Examples = sapply(tx_ki, \(x) paste0(head(unique(x), 3), collapse = ", "))
+# )
+#
+#   output$dict_tbl <- renderDT(
+#     dict,
+#     options = list(pageLength = 12, scrollX = TRUE),
+#     rownames = FALSE
+#   )
 
-  output$dict_tbl <- renderDT(
-    dict,
-    options = list(pageLength = 12, scrollX = TRUE),
-    rownames = FALSE
-  )
+  # output$dict_tbl <- renderDT({
+  #   dat <- tibble(
+  #     Variable = names(tx_ki),
+  #     Class    = sapply(tx_ki, class),
+  #     Missing  = colSums(is.na(tx_ki))
+  #   )
+  #   datatable(dat, options = list(pageLength = 12, scrollX = TRUE))
+  # })
 
-  ## 2. Summary statistics ----
-  output$sum_text <- renderPrint({
-    req(input$var_sum)
-    x <- tx_ki[[input$var_sum]]
-    if (is.numeric(x)) summary(x) else table(x, useNA = "ifany")
+  # 3-2 Data Summary Report – dynamic iframe -------------------------------
+  output$report_ui <- renderUI({
+    req(input$rep_label)
+    file_stub <- report_choices[[input$rep_label]]
+    iframe_src <- sprintf("tx_ki_summary_%s.html", file_stub)
+
+    tags$iframe(src   = iframe_src,
+                style = "width:100%; height:1100px; border:none;")
+  })
+
+  # 3-3 Workbook Explorer – read selected sheet on demand ------------------
+  sheet_data <- reactive({
+
+    raw <- read_excel(
+      path        = excel_path,
+      sheet       = input$sheet,
+      col_names   = FALSE
+    )
+
+    line1 <- raw %>% slice(1) %>% unlist(use.names = FALSE) %>% as.character()
+    line2 <- raw %>% slice(2) %>% unlist(use.names = FALSE) %>% as.character()
+
+    new_names <- paste0(line1, "(", line2, ")")
+    new_names <- make.unique(new_names)
+
+    df <- raw %>% slice(-c(1, 2))
+    names(df) <- new_names
+
+    df <- type_convert(df, na = c("", "NA"))
+
+    date_candidates <- grepl("DATE|DT|_DT$", names(df), ignore.case = TRUE) &
+      sapply(df, is.numeric)
+
+    df[date_candidates] <- lapply(df[date_candidates],
+                                  \(x) as.Date(x, origin = "1899-12-30"))
+
+    df
+  }) %>% bindCache(input$sheet)
+
+  output$tbl <- renderDT({
+    datatable(sheet_data(),
+              escape     = FALSE,
+              filter = "top",
+              options = list(pageLength = 15, scrollX = TRUE),
+              extensions = "Buttons",
+              rownames = FALSE)
+  })
+
+  output$summary <- renderPrint({
+    df <- sheet_data()
+    num_cols <- sapply(df, is.numeric)
+    summary(df[ , num_cols])
+  })
+
+  output$plot_ui <- renderUI({
+    df <- sheet_data()
+    num_cols <- names(df)[sapply(df, is.numeric)]
+    if (length(num_cols) == 0)
+      return(h4("No numeric columns."))
+    tagList(
+      selectInput("num_var", "Pick a numeric column", choices = num_cols),
+      plotOutput("hist")
+    )
+  })
+
+  output$hist <- renderPlot({
+    req(input$num_var)
+    x <- sheet_data()[[input$num_var]]
+
+    if (inherits(x, "Date")) {
+      hist(x, main = paste("Histogram of", input$num_var),
+           xlab = input$num_var, freq = TRUE, breaks = "months")
+    } else {
+      hist(x, col = "#3E8ACC", border = "white",
+           main = paste("Histogram of", input$num_var),
+           xlab  = input$num_var)
+    }
   })
 
 
+  # ## 2. Summary statistics ----
+  # output$sum_text <- renderPrint({
+  #   req(input$var_sum)
+  #   x <- tx_ki[[input$var_sum]]
+  #   if (is.numeric(x)) summary(x) else table(x, useNA = "ifany")
+  # })
+
+  output$report_ui <- renderUI({
+    req(input$rep_year)
+
+    fname <- sprintf("tx_ki_summary_%s.html",
+                     input$rep_year)
+
+    tags$iframe(
+      src   = fname,
+      style = "width:100%; height:1100px; border:none;"
+    )
+
+
+  })
 
   ## 3. Var Definition
   table_var = data.frame("Variable Name" = c("KDPI","eGFR","Post-Transplant Survival",
@@ -311,39 +490,39 @@ server <- function(input, output, session) {
     }
   })
   ## 4. Explorer plot ----
-  output$dist_plot <- renderPlot({
-    req(input$var_plot)
-    var <- input$var_plot
-    x   <- tx_ki[[var]]
-
-    if (!input$by_group) {
-      if (is.numeric(x)) {
-        hist(
-          x, main = paste("Histogram of", var),
-          xlab = var, col = "#3E8ACC", border = "white"
-        )
-      } else {
-        barplot(
-          table(x), main = paste("Bar plot of", var),
-          col = "#2ECC71", las = 2
-        )
-      }
-    } else {
-      req(input$grp_var)
-      g <- input$grp_var
-      if (is.numeric(x)) {
-        tx_ki %>%
-          ggplot(aes(.data[[g]], .data[[var]])) +
-          geom_boxplot(fill = "#3E8ACC") +
-          labs(x = g, y = var)
-      } else {
-        tx_ki %>%
-          ggplot(aes(.data[[g]], fill = .data[[var]])) +
-          geom_bar(position = "dodge") +
-          labs(x = g, y = "Count")
-      }
-    }
-  })
+  # output$dist_plot <- renderPlot({
+  #   req(input$var_plot)
+  #   var <- input$var_plot
+  #   x   <- tx_ki[[var]]
+  #
+  #   if (!input$by_group) {
+  #     if (is.numeric(x)) {
+  #       hist(
+  #         x, main = paste("Histogram of", var),
+  #         xlab = var, col = "#3E8ACC", border = "white"
+  #       )
+  #     } else {
+  #       barplot(
+  #         table(x), main = paste("Bar plot of", var),
+  #         col = "#2ECC71", las = 2
+  #       )
+  #     }
+  #   } else {
+  #     req(input$grp_var)
+  #     g <- input$grp_var
+  #     if (is.numeric(x)) {
+  #       tx_ki %>%
+  #         ggplot(aes(.data[[g]], .data[[var]])) +
+  #         geom_boxplot(fill = "#3E8ACC") +
+  #         labs(x = g, y = var)
+  #     } else {
+  #       tx_ki %>%
+  #         ggplot(aes(.data[[g]], fill = .data[[var]])) +
+  #         geom_bar(position = "dodge") +
+  #         labs(x = g, y = "Count")
+  #     }
+  #   }
+  # })
 
   output$map <- renderLeaflet({
     radius <- Site$TMR_CadTxR_c*100000
