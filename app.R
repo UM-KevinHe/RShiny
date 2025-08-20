@@ -16,6 +16,8 @@ library(haven)
 library(readr)
 library(sf)
 library(htmltools)
+library(filelock)
+library(uuid)
 
 safe_includeHTML <- function(path) {
   html <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"),
@@ -29,6 +31,28 @@ safe_includeHTML <- function(path) {
 }
 
 
+
+append_row <- function(df_row, file) {
+  dir.create(dirname(file), showWarnings = FALSE, recursive = TRUE)
+
+  df_row[is.na(df_row)] <- ""
+
+  lock <- filelock::lock(paste0(file, ".lock"))
+  on.exit(filelock::unlock(lock), add = TRUE)
+
+  if (!file.exists(file)) {
+    write.table(df_row, file,
+                sep = ",", row.names = FALSE, col.names = TRUE,
+                quote = TRUE, na = "", qmethod = "double")
+  } else {
+    write.table(df_row, file,
+                sep = ",", row.names = FALSE, col.names = FALSE,
+                quote = TRUE, na = "", qmethod = "double", append = TRUE)
+  }
+}
+feedback_dir  <- file.path(getwd(), "data")
+dir.create(feedback_dir, showWarnings = FALSE, recursive = TRUE)
+feedback_file <- file.path(feedback_dir, "feedback.csv")
 
 #setwd("C:/Users/vince/OneDrive/Desktop/Rshiny")
 center_data_1 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 1)
@@ -140,6 +164,30 @@ ui <- navbarPage(
     )
   ),
 
+  # --- 6. Outcome Definition ---
+  tabPanel(
+    "Variable Definition",
+    sidebarLayout(
+      sidebarPanel(
+        selectInput("var_name", "Choose a variable", choices = c("KDPI","eGFR","Transplant Rate","Post-Transplant Survival",
+                                                                 "Pre-transplant Mortality Rate")),
+        width = 2
+      ),
+      mainPanel(
+        fluidRow(
+          column(
+            width = 12,
+            h3("Variable Definition Table"),
+            tableOutput("table_var"),
+            h3("The following section shows example code on how to build these variables."),
+            h3("You can choose the variable of interest from the left panel.")
+          )
+        ),
+        verbatimTextOutput("code_var")
+      )
+    )
+  ),
+
 
   # # --- 3. KDPI and EPTS -------------
   # tabPanel(
@@ -200,29 +248,6 @@ ui <- navbarPage(
   #            )
   #          )
   # ),
-  # --- 6. Outcome Definition ---
-  tabPanel(
-    "Variable Definition",
-    sidebarLayout(
-      sidebarPanel(
-        selectInput("var_name", "Choose a variable", choices = c("KDPI","eGFR","Transplant Rate","Post-Transplant Survival",
-                                                                "Pre-transplant Mortality Rate")),
-        width = 2
-      ),
-      mainPanel(
-        fluidRow(
-          column(
-            width = 12,
-            h3("Variable Definition Table"),
-            tableOutput("table_var"),
-            h3("The following section shows example code on how to build these variables."),
-            h3("You can choose the variable of interest from the left panel.")
-          )
-        ),
-        verbatimTextOutput("code_var")
-      )
-    )
-  ),
 
   tabPanel(
     "Center Data",
@@ -308,6 +333,74 @@ ui <- navbarPage(
   #          DTOutput("raw_tbl")
   # ),
 
+  ## --- New tab: Feedback ------------------------------------------------------
+  tabPanel("Feedback",
+           sidebarLayout(
+             sidebarPanel(
+               textInput("fb_name",  "Your Name (optional)"),
+               textInput("fb_email", "E-mail (optional)"),
+               selectInput("fb_rating",
+                           "Overall Rating",
+                           choices  = c("5 = Very satisfied", "4", "3", "2",
+                                        "1 = Very dissatisfied"),
+                           selected = "5 = Very satisfied"),
+               textAreaInput("fb_comment",
+                             "Comments / Suggestions",
+                             placeholder = "Tell us how we can improve…",
+                             rows = 6),
+               actionButton("fb_submit", "Submit", class = "btn-primary"),
+               width = 3
+             ),
+             mainPanel(
+               uiOutput("fb_thanks"),         # acknowledgement after submit
+               tableOutput("fb_preview")      # (optional) preview for developer
+             )
+           )
+  ),
+
+  # ---------------------------------------------------------------------------
+  tabPanel("Message Board",
+           fluidRow(
+             column(
+               width = 3,
+               textInput("mb_name", "Name (optional)"),
+               textInput("mb_email", "E-mail (optional)"),
+               textAreaInput("mb_text", "Leave a message", rows = 5),
+               actionButton("mb_post", "Post", class = "btn-primary"),
+               uiOutput("mb_ack"),
+               ## ---------- hint box ----------------------------------------------------
+               tags$div(
+                 style = "font-size: 0.85em; color: #6c757d; margin-top: 8px;",
+                 "• Auto-refresh every 5 s", tags$br(),
+                 "• Double-click a row to see replies"
+               ),
+               tags$head(
+                 tags$style(HTML("
+    /* word-wrap for every <td> generated by DT or renderTable ---------*/
+    td.dt-wrap, table.modal-reply td {
+      white-space: normal !important;   /* allow wrapping          */
+      word-break: break-word;           /* break long words/URLs   */
+    }
+  "))
+               )
+
+             ),
+             column(9,
+                    h4("Messages"),
+                    # helpText("Auto-refreshes every 5 seconds • Double-click a row to view replies"),
+                    # helpText("Tip: highlight with one click, open replies with a double-click"),
+                    DTOutput("msg_table"),
+                    uiOutput("reply_ui")               # appears when a row is selected
+             )
+
+           )
+  ),
+
+
+
+
+
+
   # --- 9. About ---
   tabPanel("About",
            HTML("
@@ -316,6 +409,7 @@ ui <- navbarPage(
     ")
   )
 )
+
 
 # -------------------- Server -----------------------
 server <- function(input, output, session) {
@@ -436,11 +530,18 @@ server <- function(input, output, session) {
     fname <- sprintf("tx_ki_summary_%s.html",
                      input$rep_year)
 
-    tags$iframe(
-      src   = fname,
-      style = "width:100%; height:1100px; border:none;"
-    )
+    tagList(
 
+      tags$style(HTML("
+
+      iframe.reportFrame ~ * {}
+    ")),
+      tags$iframe(
+        class = "reportFrame",
+        src   = fname,
+        style = "width:120%; height:1100px; border:none;"
+      )
+    )
 
   })
 
@@ -589,6 +690,231 @@ server <- function(input, output, session) {
   #   filter = "top",
   #   extensions = "Buttons"
   # )
+
+
+
+
+  observeEvent(input$fb_submit, {
+    # Require a non-empty comment
+    req(trimws(input$fb_comment) != "")
+
+    # Create a one-row data frame
+    new_entry <- data.frame(
+      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+      name      = input$fb_name,
+      email      = input$fb_email,
+      rating    = input$fb_rating,
+      comment   = gsub("\n", " ", input$fb_comment),  # flatten newlines
+      stringsAsFactors = FALSE
+    )
+
+    # Append to a local CSV (first write creates column headers)
+    write.table(new_entry,
+                file      = "feedback.csv",
+                sep       = ",",
+                row.names = FALSE,
+                col.names = !file.exists("feedback.csv"),
+                append    = TRUE,
+                fileEncoding = "UTF-8")
+
+    # Display a thank-you message
+    output$fb_thanks <- renderUI({
+      tags$div(
+        style = "color:forestgreen; font-weight:600; margin-top:10px;",
+        "Thank you! Your feedback has been recorded."
+      )
+    })
+
+    # Developer-side preview (shown only when run locally)
+    if (interactive()) {
+      all_fb <- read.csv("feedback.csv", stringsAsFactors = FALSE)
+      output$fb_preview <- renderTable(all_fb, striped = TRUE)
+    }
+
+    # Clear the comment box
+    updateTextAreaInput(session, "fb_comment", value = "")
+  })
+
+
+  #————————————————————————————————————————————————————————————————
+
+  # ---- reactive reader (every 5 s) ------------------------------------------
+  msg_data <- reactiveFileReader(
+    5000, session, feedback_file,
+    readFunc = function(f) {
+      if (!file.exists(f)) {
+        return(data.frame(timestamp = character(), msg_id = character(),
+                          parent_id = character(), name = character(),
+                          message = character(), stringsAsFactors = FALSE))
+      }
+      df <- read.csv(f, stringsAsFactors = FALSE, na.strings = c("", "NA"), encoding = "UTF-8",
+                     blank.lines.skip = TRUE)         # ← skip blank lines
+      # df <- df[rowSums(is.na(df)) < ncol(df), ]
+      # df <- df[complete.cases(df$timestamp), ]        # ← drop NA rows if any
+      # df <- df[!is.na(df$timestamp) & trimws(df$timestamp) != "", ]
+      # ── NEW: drop rows whose every cell is NA or "" ─────────────────────────
+      # drop <- apply(df, 1, function(x) all(is.na(x) | trimws(x) == ""))
+      # df   <- df[!drop, ]
+      # df <- df[!apply(df, 1, function(x) all(is.na(x))), ]
+      df <- subset(df,
+                   !is.na(msg_id)    & trimws(msg_id)    != "" &
+                     !is.na(timestamp) & trimws(timestamp) != "")
+      df
+    }
+  )
+
+  # ---- post a main message ---------------------------------------------------
+  observeEvent(input$mb_post, {
+    req(trimws(input$mb_text) != "")
+
+    new_row <- data.frame(
+      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+      msg_id    = UUIDgenerate(),
+      parent_id = NA,                         # main post
+      name      = trimws(input$mb_name),
+      email     = trimws(input$mb_email),
+      message   = gsub("\n", " ", input$mb_text),
+      stringsAsFactors = FALSE
+    )
+
+    append_row(new_row, feedback_file)
+
+    output$mb_ack <- renderUI(tags$span(style="color:forestgreen;",
+                                        "✔ Posted!"))
+    updateTextAreaInput(session, "mb_text", value = "")
+  })
+
+  # ---- show table of main messages ------------------------------------------
+  output$msg_table <- renderDT({
+
+    df <- msg_data()
+    mains <- df[is.na(df$parent_id) | df$parent_id == "", ]
+    mains <- mains[order(mains$timestamp, decreasing = TRUE), ]
+
+    mains$Replies <- vapply(
+      mains$msg_id, function(id) sum(df$parent_id == id, na.rm = TRUE), integer(1)
+    )
+
+    # 1  put msg_id in the FIRST column
+    tbl <- mains[, c("msg_id", "timestamp", "name", "message", "Replies")]
+
+    datatable(
+      tbl,                                 # tbl includes msg_id + columns
+      rownames  = FALSE,
+      selection = "single",
+      options = list(
+        pageLength = 10,
+        columnDefs = list(
+          list(targets = 0, visible = FALSE),   # hide msg_id
+          list(targets = 3, className = "dt-wrap")  # Message column index
+        )
+      ),
+      callback = JS("
+    table.on('dblclick', 'tr', function() {
+      var data = table.row(this, {order:'applied'}).data();
+      Shiny.setInputValue('msg_id_dblclick', data[0], {priority: 'event'});
+    });
+")
+    )
+  })
+
+  # ---- reply UI appears when a row selected ----------------------------------
+  output$reply_ui <- renderUI({
+    sel <- input$msg_table_rows_selected
+    if (length(sel) == 0) return(NULL)
+
+    mains <- msg_data()[is.na(msg_data()$parent_id) | msg_data()$parent_id == "", ]
+    target <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, ]
+
+    tagList(
+      tags$hr(),
+      h4(sprintf("Reply to: \"%s\"", target$message)),
+      textAreaInput("reply_text", "Your reply", rows = 4),
+      actionButton("reply_post", "Send reply", class = "btn-success")
+    )
+  })
+
+  # ---- write reply -----------------------------------------------------------
+  observeEvent(input$reply_post, {
+    sel <- input$msg_table_rows_selected
+    req(sel, trimws(input$reply_text) != "")
+
+    mains <- msg_data()[is.na(msg_data()$parent_id) | msg_data()$parent_id == "", ]
+    target <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, ]
+
+    new_row <- data.frame(
+      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+      msg_id    = UUIDgenerate(),
+      parent_id = target$msg_id,
+      name      = trimws(input$mb_name),
+      email     = trimws(input$mb_email),
+      message   = gsub("\n", " ", input$reply_text),
+      stringsAsFactors = FALSE
+    )
+    append_row(new_row, feedback_file)
+
+    updateTextAreaInput(session, "reply_text", value = "")
+  })
+
+  # ---- display replies below table (optional) -------------------------------
+  # observe({
+  #   sel <- input$msg_table_dblclick                # <-- see section 2
+  #   if (is.null(sel)) return()
+  #
+  #   df      <- msg_data()
+  #   mains   <- df[is.na(df$parent_id) | df$parent_id == "", ]
+  #   target  <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, "msg_id"]
+  #   replies <- df[df$parent_id == target, ]
+  #
+  #   showModal(modalDialog(
+  #     title = "Replies",
+  #     if (nrow(replies) == 0) {
+  #       tags$em("No replies yet.")
+  #     } else {
+  #       renderTable(replies[, c("timestamp", "name", "message")], rownames = FALSE)
+  #     },
+  #     easyClose = TRUE, size = "l"
+  #   ))
+  # })
+
+  observeEvent(input$msg_id_dblclick, {
+    req(input$msg_id_dblclick)
+
+    df      <- msg_data()
+    target  <- input$msg_id_dblclick
+
+    replies <- subset(df,
+                      parent_id == target &
+                        !is.na(timestamp) & trimws(timestamp) != "",
+                      select = c(timestamp, name, message))
+
+    showModal(modalDialog(
+      title = "Replies",
+      if (nrow(replies) == 0) {
+        tags$em("No replies yet.")
+      } else {
+        # give the table a class so our CSS hits it
+        tags$table(class = "modal-reply table table-striped",
+                   tags$thead(
+                     tags$tr(
+                       tags$th("TIMESTAMP"), tags$th("NAME"), tags$th("MESSAGE")
+                     )
+                   ),
+                   tags$tbody(
+                     lapply(seq_len(nrow(replies)), function(i) {
+                       tags$tr(
+                         tags$td(replies$timestamp[i]),
+                         tags$td(replies$name[i]),
+                         tags$td(replies$message[i])
+                       )
+                     })
+                   )
+        )
+      },
+      easyClose = TRUE, size = "l"
+    ))
+  })
+
 }
 
 # -------------------- Run app ----------------------
