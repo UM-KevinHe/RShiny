@@ -53,6 +53,9 @@ append_row <- function(df_row, file) {
 feedback_dir  <- file.path(getwd(), "data")
 dir.create(feedback_dir, showWarnings = FALSE, recursive = TRUE)
 feedback_file <- file.path(feedback_dir, "feedback.csv")
+message_file  <- file.path(feedback_dir, "message board.csv")
+
+
 
 #setwd("C:/Users/vince/OneDrive/Desktop/Rshiny")
 center_data_1 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 1)
@@ -334,29 +337,68 @@ ui <- navbarPage(
   # ),
 
   ## --- New tab: Feedback ------------------------------------------------------
-  tabPanel("Feedback",
-           sidebarLayout(
-             sidebarPanel(
-               textInput("fb_name",  "Your Name (optional)"),
-               textInput("fb_email", "E-mail (optional)"),
-               selectInput("fb_rating",
-                           "Overall Rating",
-                           choices  = c("5 = Very satisfied", "4", "3", "2",
-                                        "1 = Very dissatisfied"),
-                           selected = "5 = Very satisfied"),
-               textAreaInput("fb_comment",
-                             "Comments / Suggestions",
-                             placeholder = "Tell us how we can improve…",
-                             rows = 6),
-               actionButton("fb_submit", "Submit", class = "btn-primary"),
-               width = 3
-             ),
-             mainPanel(
-               uiOutput("fb_thanks"),         # acknowledgement after submit
-               tableOutput("fb_preview")      # (optional) preview for developer
-             )
-           )
-  ),
+  # --- Feedback (2-column layout) ---
+  tabPanel(
+    "Feedback",
+    # 一点点样式：让右侧评论框更高、提交按钮铺满
+    tags$head(tags$style(HTML("
+    #fb_comment { min-height: 380px; }   /* 右侧评论框高度 */
+  "))),
+    fluidRow(
+      column(
+        width = 10, offset = 1,   # 居中；想全宽就换成 width=12, offset=0
+        tags$div(
+          class = "card shadow-sm p-3",
+          h3("We'd love your feedback"),
+          tags$p("Tell us which tab your comment is about and what we can improve."),
+          fluidRow(
+            # ------ 左侧表单（name / email / which tab） ------
+            column(
+              width = 4, class = "fb-left",
+              textInput("fb_name",  "Your Name (optional)"),
+              textInput("fb_email", "E-mail (optional)"),
+              selectInput(
+                "fb_topic",
+                "Which tab is your feedback about?",
+                choices = c(
+                  "Overview",
+                  "Data Dictionary",
+                  "Data Summary Report",
+                  "Variable Definition",
+                  "KDPI and EPTS",
+                  "Center Data",
+                  "Center Map",
+                  "Outcome Exploration",
+                  "Message Board",
+                  "Data Use Agreement",
+                  "About",
+                  "Other / General"
+                ),
+                selected = "Overview"
+              )
+            ),
+            # ------ 右侧（大）评论框 + 提交按钮 ------
+            column(
+              width = 8, class = "fb-right",
+              textAreaInput(
+                "fb_comment",
+                "Comments / Suggestions",
+                placeholder = "Tell us how we can improve…",
+                rows = 16, width = "100%"
+              ),
+              div(class = "mt-3",
+                  actionButton("fb_submit", "Submit",
+                               class = "btn btn-primary btn-lg w-100"))
+            )
+          ),
+          # 提交后的提示
+          uiOutput("fb_thanks")
+          # 如果之前你还保留了预览表，请确保已移除 tableOutput("fb_preview")
+        )
+      )
+    )
+  )
+  ,
 
   # ---------------------------------------------------------------------------
   tabPanel("Message Board",
@@ -398,6 +440,22 @@ ui <- navbarPage(
 
 
 
+  # --- Data Use Agreement (new tab) ---
+  tabPanel(
+    "Data Use Agreement",
+    fluidRow(
+      column(
+        width = 10, offset = 1,   # 居中显示
+        h3("Data Use Agreement (Selected Clauses)"),
+        tags$p("The following clauses are reproduced verbatim:"),
+        tags$ol(
+          tags$li(HTML('<strong>#9.</strong> Before submitting an abstract, manuscript, or other aggregation data to another party for presentation or publication, the Recipient must submit it to the SRTR and COR for review to ensure compliance with the terms of this agreement regarding confidentiality. The COR shall respond within 30 days. If the abstract, manuscript, or data aggregation does not reflect compliance with the terms of this agreement, the Recipient will revise and resubmit to the SRTR and COR. Upon publication, the Recipient shall provide a copy of the final work and a complete citation to the SRTR and COR.')),
+          tags$li(HTML('<strong>#12.</strong> All publications using the released Data must contain the standard disclaimer, ``The data reported here have been supplied by the Hennepin Healthcare Research Institute (HHRI) as the contractor for the Scientific Registry of Transplant Recipients (SRTR). The interpretation and reporting of these data are the responsibility of the author(s) and in no way should be seen as an official policy of or interpretation by the SRTR or the U.S. Government.\'\'')),
+          tags$li(HTML('<strong>#13.</strong>  All publications using the released Data must contain a statement confirming that the study was submitted to a functioning IRB for review and approval. The IRB determination status must be indicated in the text of any manuscript using the released Data.')),
+          tags$li(HTML('<strong>#14.</strong> All publications using the released Data must contain this standard statement within the methods section of the publication, ``This study used data from the Scientific Registry of Transplant Recipients (SRTR). The SRTR data system includes data on all donor, wait-listed candidates, and transplant recipients in the US, submitted by the members of the Organ Procurement and Transplantation Network (OPTN). The Health Resources and Services Administration (HRSA), U.S. Department of Health and Human Services provides oversight to the activities of the OPTN and SRTR contractors.\'\'')))
+      )
+    )
+  ),
 
 
 
@@ -695,43 +753,31 @@ server <- function(input, output, session) {
 
 
   observeEvent(input$fb_submit, {
-    # Require a non-empty comment
     req(trimws(input$fb_comment) != "")
 
-    # Create a one-row data frame
     new_entry <- data.frame(
       timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
       name      = input$fb_name,
-      email      = input$fb_email,
-      rating    = input$fb_rating,
-      comment   = gsub("\n", " ", input$fb_comment),  # flatten newlines
+      email     = input$fb_email,
+      topic     = input$fb_topic,                 # 之前我们改成了“针对哪个 Tab”
+      comment   = gsub("\n", " ", input$fb_comment),
       stringsAsFactors = FALSE
     )
 
-    # Append to a local CSV (first write creates column headers)
-    write.table(new_entry,
-                file      = "feedback.csv",
-                sep       = ",",
-                row.names = FALSE,
-                col.names = !file.exists("feedback.csv"),
-                append    = TRUE,
-                fileEncoding = "UTF-8")
+    # 统一用 append_row（含文件锁），写到 data/feedback.csv
+    append_row(new_entry, feedback_file)
 
-    # Display a thank-you message
     output$fb_thanks <- renderUI({
-      tags$div(
-        style = "color:forestgreen; font-weight:600; margin-top:10px;",
-        "Thank you! Your feedback has been recorded."
-      )
+      tags$div(style = "color:forestgreen; font-weight:600; margin-top:10px;",
+               "Thank you! Your feedback has been recorded.")
     })
 
-    # Developer-side preview (shown only when run locally)
-    if (interactive()) {
-      all_fb <- read.csv("feedback.csv", stringsAsFactors = FALSE)
-      output$fb_preview <- renderTable(all_fb, striped = TRUE)
-    }
+    # 如需本地预览，解开注释即可；此处读 feedback_file（不是裸字符串）
+    # if (interactive()) {
+    #   all_fb <- read.csv(feedback_file, stringsAsFactors = FALSE)
+    #   output$fb_preview <- renderTable(all_fb, striped = TRUE)
+    # }
 
-    # Clear the comment box
     updateTextAreaInput(session, "fb_comment", value = "")
   })
 
@@ -740,22 +786,15 @@ server <- function(input, output, session) {
 
   # ---- reactive reader (every 5 s) ------------------------------------------
   msg_data <- reactiveFileReader(
-    5000, session, feedback_file,
+    5000, session, message_file,
     readFunc = function(f) {
       if (!file.exists(f)) {
         return(data.frame(timestamp = character(), msg_id = character(),
                           parent_id = character(), name = character(),
                           message = character(), stringsAsFactors = FALSE))
       }
-      df <- read.csv(f, stringsAsFactors = FALSE, na.strings = c("", "NA"), encoding = "UTF-8",
-                     blank.lines.skip = TRUE)         # ← skip blank lines
-      # df <- df[rowSums(is.na(df)) < ncol(df), ]
-      # df <- df[complete.cases(df$timestamp), ]        # ← drop NA rows if any
-      # df <- df[!is.na(df$timestamp) & trimws(df$timestamp) != "", ]
-      # ── NEW: drop rows whose every cell is NA or "" ─────────────────────────
-      # drop <- apply(df, 1, function(x) all(is.na(x) | trimws(x) == ""))
-      # df   <- df[!drop, ]
-      # df <- df[!apply(df, 1, function(x) all(is.na(x))), ]
+      df <- read.csv(f, stringsAsFactors = FALSE, na.strings = c("", "NA"),
+                     encoding = "UTF-8", blank.lines.skip = TRUE)
       df <- subset(df,
                    !is.na(msg_id)    & trimws(msg_id)    != "" &
                      !is.na(timestamp) & trimws(timestamp) != "")
@@ -777,7 +816,7 @@ server <- function(input, output, session) {
       stringsAsFactors = FALSE
     )
 
-    append_row(new_row, feedback_file)
+    append_row(new_row, message_file)
 
     output$mb_ack <- renderUI(tags$span(style="color:forestgreen;",
                                         "✔ Posted!"))
@@ -851,7 +890,7 @@ server <- function(input, output, session) {
       message   = gsub("\n", " ", input$reply_text),
       stringsAsFactors = FALSE
     )
-    append_row(new_row, feedback_file)
+    append_row(new_row, message_file)
 
     updateTextAreaInput(session, "reply_text", value = "")
   })
