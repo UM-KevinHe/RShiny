@@ -4,17 +4,22 @@ library(tidyverse)
 library(bslib)
 library(png)
 library(leaflet)
+library(mapview)
 library(RColorBrewer)
 library(scales)
 library(lattice)
 library(dplyr)
 library(ggplot2)
-library(shiny)
 library(tigris)
 library(readxl)
 library(haven)
+library(readr)
 library(sf)
 library(htmltools)
+library(filelock)
+library(uuid)
+
+#webshot::install_phantomjs()
 
 safe_includeHTML <- function(path) {
   html <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"),
@@ -24,46 +29,41 @@ safe_includeHTML <- function(path) {
   HTML(html)
 }
 
+append_row <- function(df_row, file) {
+  dir.create(dirname(file), showWarnings = FALSE, recursive = TRUE)
 
-#setwd("C:/Users/vince/OneDrive/Desktop/Rshiny")
-center_data_1 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 1)
-center_data_2 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 5)
-center_data = data.frame(center_data_1,center_data_2)
+  df_row[is.na(df_row)] <- ""
 
-all_counties_2023 <- read_sas("data/all_counties_2023.sas7bdat.filepart")
-county_dsa <- all_counties_2023 %>%
-  mutate(
-    fips_cd = fips_cnty,
-    opo_ctr_cd = ifelse(opo_ctr_cd == "DCTC", "MDPC", opo_ctr_cd),
-    # Optional: Uncomment the next line if needed
-    opo_ctr_cd = ifelse(opo_ctr_cd == "OHOV", "KYDA", opo_ctr_cd)
-  )
-load("data/us_counties.RData")
-# opo_map <- us_counties %>%
-#   left_join(county_dsa, by = "fips_cd") %>%
-#   filter(!is.na(opo_ctr_cd)) %>%
-#   group_by(opo_ctr_cd) %>%
-#   summarise(geometry = st_union(geometry)) %>%
-#   st_as_sf()
-opo_map = readRDS("data/opo_map.rds")
-set.seed(2024)
-opo_map$color_cd = sample(1:54)
-geo_info = read_xls("data/csrs_final_tables_22_11_KI.xls")
-center_data = center_data[-1,]
-geo_info = geo_info[-1,] %>% select(CTR_CD,Latitude,Longitude)
-center_data = merge(center_data,geo_info,by = "CTR_CD") %>% select(ENTIRE_NAME,CTR_CD,TMR_CadTxR_c,Latitude,Longitude)
+  lock <- filelock::lock(paste0(file, ".lock"))
+  on.exit(filelock::unlock(lock), add = TRUE)
 
-Site <- center_data[-c(195),]
-#Site <- merge(Site,center_data[,c("CTR_CD","TMR_CadTxR_c")],all.x = TRUE,by="CTR_CD")
-Site$Latitude <- as.numeric(Site$Latitude)
-Site$Longitude <- as.numeric(Site$Longitude)
-Site$TMR_CadTxR_c <- as.numeric(Site$TMR_CadTxR_c)
+  if (!file.exists(file)) {
+    write.table(df_row, file,
+                sep = ",", row.names = FALSE, col.names = TRUE,
+                quote = TRUE, na = "", qmethod = "double")
+  } else {
+    write.table(df_row, file,
+                sep = ",", row.names = FALSE, col.names = FALSE,
+                quote = TRUE, na = "", qmethod = "double", append = TRUE)
+  }
+}
+feedback_dir  <- file.path(getwd(), "data")
+dir.create(feedback_dir, showWarnings = FALSE, recursive = TRUE)
+feedback_file <- file.path(feedback_dir, "feedback.csv")
+message_file  <- file.path(feedback_dir, "message board.csv")
 
+time = c("January 2018", "July 2018", "January 2019", "July 2019", "January 2020", "July 2020",
+         "January 2021", "July 2021", "January 2022", "July 2022", "January 2023", "July 2023",
+         "January 2024", "July 2024", "January 2025", "July 2025")
 vars <- c(
-  "Deceased Donor Transplant Rate" = "TMR_CadTxR_c"
+  "Deceased Donor Transplant Rate",
+  "Transplant Rate",
+  "Pre-transplant Mortality Rate"
 )
 # -------------------- Load data --------------------
-tx_ki <- read_csv("data/tx_ki_synthetic.csv")      # or readRDS("data/tx_ki.rds")
+
+excel_path <- "data/csrs_final_tables_2505_KI.xls"
+sheet_list <- excel_sheets(excel_path)
 
 # -------------------- UI ---------------------------
 ui <- navbarPage(
@@ -75,6 +75,7 @@ ui <- navbarPage(
   # "litera", "lumen", "lux", "materia", "minty", "morph",
   # "pulse", "quartz", "sandstone", "simplex", "sketchy", "slate",
   # "solar", "spacelab", "superhero", "united", "vapor", "yeti", "zephyr"
+  # --- Center Geographic Map ---
 
   # --- 1. Overview tab now shows a PDF ---
   tabPanel(
@@ -106,14 +107,90 @@ ui <- navbarPage(
   ),
 
   # --- 3. Summary Report (HTML) -------------
+  # tabPanel(
+  #   "Summary Report (HTML)",
+  #   tags$iframe(
+  #     src   = "tx_ki_summary_custom1.html",
+  #     style = "width:100%; height:1100px; border:none;"
+  #   )
+  # ),
+
+
   tabPanel(
-    "Summary Report (HTML)",
-    tags$iframe(
-      src   = "tx_ki_summary_custom1.html",
-      style = "width:100%; height:1100px; border:none;"
+    "Data Summary Report",
+    sidebarLayout(
+      sidebarPanel(
+        selectInput(
+          inputId  = "rep_year",
+          label    = "Transplant Year (REC_TX_DT)",
+          choices  = c("1987-2025 (Full)", "2015-2025 (Frequently Used)", "2015", "2016", "2017"
+                       , "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"),
+          selected = "1987-2025 (Full)"
+        ),
+        width = 2
+      ),
+      mainPanel(
+        uiOutput("report_ui")
+      )
+    )
+  ),
+  # --- 6. Outcome Definition ---
+  tabPanel(
+    "Variable Definition",
+    sidebarLayout(
+      sidebarPanel(
+        selectInput("var_name", "Choose a variable", choices = c("KDPI","eGFR","Transplant Rate","Post-Transplant Survival",
+                                                                "Pre-transplant Mortality Rate"))
+      ),
+      mainPanel(
+        fluidRow(
+          column(
+            width = 12,
+            h3("Variable Definition Table"),
+            tableOutput("table_var"),
+            uiOutput("text1")
+          )
+        ),
+        verbatimTextOutput("code_var"),
+        fluidRow(
+          column(
+            width = 12,
+            h3("Reference"),
+            uiOutput("text2")
+          )
+        )
+      )
     )
   ),
 
+  # # --- 3. KDPI and EPTS -------------
+  # tabPanel(
+  #   "KDPI and EPTS",
+  #   includeHTML("www/KDPI-and-EPTS-html.html")
+  # ),
+
+  # --- 3. KDPI and EPTS -------------
+  tabPanel(
+    "KDPI and EPTS",
+    tags$head(
+      tags$script(src = "iframeResizer.min.js")
+    ),
+    tags$iframe(
+      src   = "KDPI-and-EPTS-html.html",
+      style = "width:100%; height:1100px; border:none;"
+    ),
+    # activate resizer
+    tags$script("iFrameResize({log:false, checkOrigin:false}, '#rep');")
+  ),
+
+  # # --- 3. KDPI and EPTS -------------
+  # tabPanel(
+  #   "KDPI and EPTS",
+  #   tags$iframe(
+  #     src   = "KDPI-and-EPTS-html.html",
+  #     style = "width:100%; height:1100px; border:none;"
+  #   )
+  # ),
   # tabPanel(
   #   "Summary Report (HTML)",
   #   safe_includeHTML("www/tx_ki_summary_custom.html")
@@ -129,10 +206,10 @@ ui <- navbarPage(
   #          )
   # ),
 
-  # --- 4. Interactive Dictionary (DT table) ---
-  tabPanel("Data Dictionary",
-           DTOutput("dict_tbl")
-  ),
+  # # --- 4. Interactive Dictionary (DT table) ---
+  # tabPanel("Data Dictionary",
+  #          DTOutput("dict_tbl")
+  # ),
 
   # --- 5. Summary Statistics (interactive) ---
   # tabPanel("Summary Statistics",
@@ -145,30 +222,7 @@ ui <- navbarPage(
   #            )
   #          )
   # ),
-  # --- 6. Outcome Definition ---
-  tabPanel(
-    "Variable Definition",
-    sidebarLayout(
-      sidebarPanel(
-        selectInput("var_name", "Choose a variable", choices = c("KDPI","eGFR","Transplant Rate","Post-Transplant Survival",
-                                                                "Pre-transplant Mortality Rate"))
-      ),
-      mainPanel(
-        fluidRow(
-          column(
-            width = 12,
-            h3("Variable Definition Table"),
-            tableOutput("table_var"),
-            h3("The following section shows example code on how to build these variables."),
-            h3("You can choose the variable of interest from the left panel.")
-          )
-        ),
-        verbatimTextOutput("code_var")
-      )
-    )
-  ),
 
-  # --- Center Geographic Map ---
   tabPanel("Center Map",
            fluidRow(
              column(
@@ -176,59 +230,210 @@ ui <- navbarPage(
                h3("Center-level Information"),
                h5("Currently, 317 centers are included in the dataset. However, not all of them have available geographic information."),
                h5("In all, 232 centers have available geographic information and is displayed in the map below."),
-               h5("Each circle represents a transplant center. You can click on the circle to see the name and the selected outcome.")
+               h5("Each circle represents a transplant center. You can click on the circle to see the name and the selected outcome."),
+               h5("After choosing the zoom level and location, you can click the download button to download the map as a png file.")
              )
            ),
            div(class="outer",
+               tags$head(tags$script('
+                        var dimension = [0, 0];
+                        $(document).on("shiny:connected", function(e) {
+                        dimension[0] = document.getElementById("map").clientWidth;
+                        dimension[1] = document.getElementById("map").clientHeight;
+                        Shiny.onInputChange("dimension", dimension);
+                        });
+                        $(document).on("shiny:visualchange", function(e) {
+                        dimension[0] = document.getElementById("map").clientWidth;
+                        dimension[1] = document.getElementById("map").clientHeight;
+                        Shiny.onInputChange("dimension", dimension);
+                        });
+                        $(window).resize(function(e) {
+                        dimension[0] = document.getElementById("map").clientWidth;
+                        dimension[1] = document.getElementById("map").clientHeight;
+                        Shiny.onInputChange("dimension", dimension);
+                        });
+                        ')),
                leafletOutput("map", width = "70%", height = 600),
+               downloadButton("dl","Download Map"),
                absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                              draggable = TRUE, top = 60, left = "auto", right = 20, bottom = "auto",
                              width = 500, height = "auto",
 
                              h2("Transplant explorer"),
 
-                             selectInput(inputId =  "outcome",label =  "Outcome", choices = vars,selected ="Deceased Donor Transplant Rate"))
+                             selectInput("outcome","Outcome", choices = vars,selected ="Deceased Donor Transplant Rate"),
+                             selectInput("period","Period", choices = time,selected ="January 2025"))
 
                #plotOutput("lineplot", height = 300),
                #plotOutput("histplot", height = 300))
+           ),
+           fluidRow(
+             column(
+               width = 12,
+               h3("Reference"),
+               uiOutput("text3")
+             )
            )
   ),
+
+
   # --- 7. Explorer (plots) ---
-  tabPanel("Explorer",
-           sidebarLayout(
-             sidebarPanel(
-               selectInput("var_plot", "Variable to plot", choices = names(tx_ki)),
-               checkboxInput("by_group", "Display by group"),
-               conditionalPanel(
-                 condition = "input.by_group == true",
-                 selectInput("grp_var", "Grouping variable", choices = names(tx_ki))
-               )
-             ),
-             mainPanel(
-               plotOutput("dist_plot", height = "500px")
-             )
-           )
-  ),
+  # tabPanel("Explorer",
+  #          sidebarLayout(
+  #            sidebarPanel(
+  #              selectInput("var_plot", "Variable to plot", choices = names(tx_ki)),
+  #              checkboxInput("by_group", "Display by group"),
+  #              conditionalPanel(
+  #                condition = "input.by_group == true",
+  #                selectInput("grp_var", "Grouping variable", choices = names(tx_ki))
+  #              )
+  #            ),
+  #            mainPanel(
+  #              plotOutput("dist_plot", height = "500px")
+  #            )
+  #          )
+  # ),
   # --- 8. Outcome Exploration ---
-  tabPanel("Outcome Exploration",
-           sidebarLayout(
-             sidebarPanel(
-               selectInput("group_plot", "Variable to group by", choices = c("Transplant Type","Age","Gender","Diabetes","Waiting Time")),
-             ),
-             mainPanel(
-               h3("This panel explores post-transplant survival. The first plot is a 2-year Kaplan-Meier plot comparing waitlist to different transplant types."),
-               img(src = "2yr Compare Version 2.png", align = "left", width = 1100, height = 900),
-               h3("This panel explores post-transplant survival. The next plot is a 2-year Relative Risk plot comparing waitlist to different transplant types."),
-               h3("You may indicate the grouping variable in the left panel."),
-               img(src = "RR 2yr Compare.png", align = "left", width = 1100, height = 900)
-               #plotOutput("outcome_plot", height = "500px")
-             )
-           )
-  ),
+  # tabPanel("Outcome Exploration",
+  #          sidebarLayout(
+  #            sidebarPanel(
+  #              selectInput("group_plot", "Variable to group by", choices = c("Transplant Type","Age","Gender","Diabetes","Waiting Time")),
+  #            ),
+  #            mainPanel(
+  #              h3("This panel explores post-transplant survival. The first plot is a 2-year Kaplan-Meier plot comparing waitlist to different transplant types."),
+  #              img(src = "2yr Compare Version 2.png", align = "left", width = 1100, height = 900),
+  #              h3("This panel explores post-transplant survival. The next plot is a 2-year Relative Risk plot comparing waitlist to different transplant types."),
+  #              h3("You may indicate the grouping variable in the left panel."),
+  #              img(src = "RR 2yr Compare.png", align = "left", width = 1100, height = 900)
+  #              #plotOutput("outcome_plot", height = "500px")
+  #            )
+  #          )
+  # ),
   # # --- 7. Raw Data ---
   # tabPanel("Raw Data",
   #          DTOutput("raw_tbl")
   # ),
+
+  ## --- New tab: Feedback ------------------------------------------------------
+  # --- Feedback (2-column layout) ---
+  tabPanel(
+    "Feedback",
+    # 一点点样式：让右侧评论框更高、提交按钮铺满
+    tags$head(tags$style(HTML("
+    #fb_comment { min-height: 380px; }   /* 右侧评论框高度 */
+  "))),
+    fluidRow(
+      column(
+        width = 10, offset = 1,   # 居中；想全宽就换成 width=12, offset=0
+        tags$div(
+          class = "card shadow-sm p-3",
+          h3("We'd love your feedback"),
+          tags$p("Tell us which tab your comment is about and what we can improve."),
+          fluidRow(
+            # ------ 左侧表单（name / email / which tab） ------
+            column(
+              width = 4, class = "fb-left",
+              textInput("fb_name",  "Your Name (optional)"),
+              textInput("fb_email", "E-mail (optional)"),
+              selectInput(
+                "fb_topic",
+                "Which tab is your feedback about?",
+                choices = c(
+                  "Overview",
+                  "Data Dictionary",
+                  "Data Summary Report",
+                  "Variable Definition",
+                  "KDPI and EPTS",
+                  "Center Data",
+                  "Center Map",
+                  "Outcome Exploration",
+                  "Message Board",
+                  "Data Use Agreement",
+                  "About",
+                  "Other / General"
+                ),
+                selected = "Overview"
+              )
+            ),
+            # ------ 右侧（大）评论框 + 提交按钮 ------
+            column(
+              width = 8, class = "fb-right",
+              textAreaInput(
+                "fb_comment",
+                "Comments / Suggestions",
+                placeholder = "Tell us how we can improve…",
+                rows = 16, width = "100%"
+              ),
+              div(class = "mt-3",
+                  actionButton("fb_submit", "Submit",
+                               class = "btn btn-primary btn-lg w-100"))
+            )
+          ),
+          # 提交后的提示
+          uiOutput("fb_thanks")
+          # 如果之前你还保留了预览表，请确保已移除 tableOutput("fb_preview")
+        )
+      )
+    )
+  )
+  ,
+
+  # ---------------------------------------------------------------------------
+  tabPanel("Message Board",
+           fluidRow(
+             column(
+               width = 3,
+               textInput("mb_name", "Name (optional)"),
+               textInput("mb_email", "E-mail (optional)"),
+               textAreaInput("mb_text", "Leave a message", rows = 5),
+               actionButton("mb_post", "Post", class = "btn-primary"),
+               uiOutput("mb_ack"),
+               ## ---------- hint box ----------------------------------------------------
+               tags$div(
+                 style = "font-size: 0.85em; color: #6c757d; margin-top: 8px;",
+                 "• Auto-refresh every 5 s", tags$br(),
+                 "• Double-click a row to see replies"
+               ),
+               tags$head(
+                 tags$style(HTML("
+    /* word-wrap for every <td> generated by DT or renderTable ---------*/
+    td.dt-wrap, table.modal-reply td {
+      white-space: normal !important;   /* allow wrapping          */
+      word-break: break-word;           /* break long words/URLs   */
+    }
+  "))
+               )
+
+             ),
+             column(9,
+                    h4("Messages"),
+                    # helpText("Auto-refreshes every 5 seconds • Double-click a row to view replies"),
+                    # helpText("Tip: highlight with one click, open replies with a double-click"),
+                    DTOutput("msg_table"),
+                    uiOutput("reply_ui")               # appears when a row is selected
+             )
+
+           )
+  ),
+
+
+
+  # --- Data Use Agreement (new tab) ---
+  tabPanel(
+    "Data Use Agreement",
+    fluidRow(
+      column(
+        width = 10, offset = 1,   # 居中显示
+        h3("Data Use Agreement (Selected Clauses)"),
+        tags$p("The following clauses are reproduced verbatim:"),
+        tags$ol(
+          tags$li(HTML('<strong>#9.</strong> Before submitting an abstract, manuscript, or other aggregation data to another party for presentation or publication, the Recipient must submit it to the SRTR and COR for review to ensure compliance with the terms of this agreement regarding confidentiality. The COR shall respond within 30 days. If the abstract, manuscript, or data aggregation does not reflect compliance with the terms of this agreement, the Recipient will revise and resubmit to the SRTR and COR. Upon publication, the Recipient shall provide a copy of the final work and a complete citation to the SRTR and COR.')),
+          tags$li(HTML('<strong>#12.</strong> All publications using the released Data must contain the standard disclaimer, ``The data reported here have been supplied by the Hennepin Healthcare Research Institute (HHRI) as the contractor for the Scientific Registry of Transplant Recipients (SRTR). The interpretation and reporting of these data are the responsibility of the author(s) and in no way should be seen as an official policy of or interpretation by the SRTR or the U.S. Government.\'\'')),
+          tags$li(HTML('<strong>#13.</strong>  All publications using the released Data must contain a statement confirming that the study was submitted to a functioning IRB for review and approval. The IRB determination status must be indicated in the text of any manuscript using the released Data.')),
+          tags$li(HTML('<strong>#14.</strong> All publications using the released Data must contain this standard statement within the methods section of the publication, ``This study used data from the Scientific Registry of Transplant Recipients (SRTR). The SRTR data system includes data on all donor, wait-listed candidates, and transplant recipients in the US, submitted by the members of the Organ Procurement and Transplantation Network (OPTN). The Health Resources and Services Administration (HRSA), U.S. Department of Health and Human Services provides oversight to the activities of the OPTN and SRTR contractors.\'\'')))
+      )
+    )
+  ),
 
   # --- 9. About ---
   tabPanel("About",
@@ -241,26 +446,152 @@ ui <- navbarPage(
 
 # -------------------- Server -----------------------
 server <- function(input, output, session) {
+  all_data = readRDS("data/center_data.rds")
 
+  all_counties_2023 <- read_sas("data/all_counties_2023.sas7bdat.filepart")
+  county_dsa <- all_counties_2023 %>%
+    mutate(
+      fips_cd = fips_cnty,
+      opo_ctr_cd = ifelse(opo_ctr_cd == "DCTC", "MDPC", opo_ctr_cd),
+      # Optional: Uncomment the next line if needed
+      opo_ctr_cd = ifelse(opo_ctr_cd == "OHOV", "KYDA", opo_ctr_cd)
+    )
+  load("data/us_counties.RData")
+  # opo_map <- us_counties %>%
+  #   left_join(county_dsa, by = "fips_cd") %>%
+  #   filter(!is.na(opo_ctr_cd)) %>%
+  #   group_by(opo_ctr_cd) %>%
+  #   summarise(geometry = st_union(geometry)) %>%
+  #   st_as_sf()
+
+
+  output$text1 = renderUI(HTML(paste("The following section shows example code on how to build these variables.<br>",
+                                       "You can choose the variable of interest from the left panel.<br>",
+                                       sep = "")))
+  output$text2 = renderUI(HTML(paste("1. KDPI is used to quantify the quality of deceased donor kidneys relative to other recovered kidneys. SRTR has a report detailing its usage.<br>",
+                                     "<p style='text-indent: 15px;'>KDPI Reference: https://optn.transplant.hrsa.gov/media/j34dm4mv/kdpi_guide.pdf<br></p>",
+                                     "2. eGFR is commonly used for renal functions. Currently, the 2021 CKD-EPI equation is used. The equation is derived from the following paper.<br>",
+                                     "<p style='text-indent: 15px;'>eGFR Reference: https://www.nejm.org/doi/full/10.1056/NEJMoa2102953<br></p>",
+                                     sep = "")))
+
+  output$text3 = renderUI(HTML(paste("1. All center-level information are available on the SRTR website listed below.<br>",
+                                     "<p style='text-indent: 15px;'>PSR Reference: https://www.srtr.org/reports/program-specific-reports/<br></p>",
+                                     "2. The OPO county assignment can be found on the SRTR website listed below.<br>",
+                                     "<p style='text-indent: 15px;'>eGFR Reference: https://www.srtr.org/reports/opo-specific-reports/interactive-report<br></p>",
+                                     sep = "")))
   ## 1. Data dictionary ----
-  dict <- tibble(
-    Variable = names(tx_ki),
-    Class    = sapply(tx_ki, class),
-    Missing  = colSums(is.na(tx_ki)),
-    Examples = sapply(tx_ki, \(x) paste0(head(unique(x), 3), collapse = ", "))
-  )
+  # dict <- tibble(
+  #   Variable = names(tx_ki),
+  #   Class    = sapply(tx_ki, class),
+  #   Missing  = colSums(is.na(tx_ki)),
+  #   Examples = sapply(tx_ki, \(x) paste0(head(unique(x), 3), collapse = ", "))
+  # )
 
-  output$dict_tbl <- renderDT(
-    dict,
-    options = list(pageLength = 12, scrollX = TRUE),
-    rownames = FALSE
-  )
+  # 3-2 Data Summary Report – dynamic iframe -------------------------------
+  output$report_ui <- renderUI({
+    req(input$rep_label)
+    file_stub <- report_choices[[input$rep_label]]
+    iframe_src <- sprintf("tx_ki_summary_%s.html", file_stub)
 
-  ## 2. Summary statistics ----
-  output$sum_text <- renderPrint({
-    req(input$var_sum)
-    x <- tx_ki[[input$var_sum]]
-    if (is.numeric(x)) summary(x) else table(x, useNA = "ifany")
+    tags$iframe(src   = iframe_src,
+                style = "width:100%; height:1100px; border:none;")
+  })
+
+  # 3-3 Workbook Explorer – read selected sheet on demand ------------------
+  sheet_data <- reactive({
+
+    raw <- read_excel(
+      path        = excel_path,
+      sheet       = input$sheet,
+      col_names   = FALSE
+    )
+
+    line1 <- raw %>% slice(1) %>% unlist(use.names = FALSE) %>% as.character()
+    line2 <- raw %>% slice(2) %>% unlist(use.names = FALSE) %>% as.character()
+
+    new_names <- paste0(line1, "(", line2, ")")
+    new_names <- make.unique(new_names)
+
+    df <- raw %>% slice(-c(1, 2))
+    names(df) <- new_names
+
+    df <- type_convert(df, na = c("", "NA"))
+
+    date_candidates <- grepl("DATE|DT|_DT$", names(df), ignore.case = TRUE) &
+      sapply(df, is.numeric)
+
+    df[date_candidates] <- lapply(df[date_candidates],
+                                  \(x) as.Date(x, origin = "1899-12-30"))
+
+    df
+  }) %>% bindCache(input$sheet)
+
+  output$tbl <- renderDT({
+    datatable(sheet_data(),
+              escape     = FALSE,
+              filter = "top",
+              options = list(pageLength = 15, scrollX = TRUE),
+              extensions = "Buttons",
+              rownames = FALSE)
+  })
+
+  output$summary <- renderPrint({
+    df <- sheet_data()
+    num_cols <- sapply(df, is.numeric)
+    summary(df[ , num_cols])
+  })
+
+  output$plot_ui <- renderUI({
+    df <- sheet_data()
+    num_cols <- names(df)[sapply(df, is.numeric)]
+    if (length(num_cols) == 0)
+      return(h4("No numeric columns."))
+    tagList(
+      selectInput("num_var", "Pick a numeric column", choices = num_cols),
+      plotOutput("hist")
+    )
+  })
+
+  output$hist <- renderPlot({
+    req(input$num_var)
+    x <- sheet_data()[[input$num_var]]
+
+    if (inherits(x, "Date")) {
+      hist(x, main = paste("Histogram of", input$num_var),
+           xlab = input$num_var, freq = TRUE, breaks = "months")
+    } else {
+      hist(x, col = "#3E8ACC", border = "white",
+           main = paste("Histogram of", input$num_var),
+           xlab  = input$num_var)
+    }
+  })
+
+  # ## 2. Summary statistics ----
+  # output$sum_text <- renderPrint({
+  #   req(input$var_sum)
+  #   x <- tx_ki[[input$var_sum]]
+  #   if (is.numeric(x)) summary(x) else table(x, useNA = "ifany")
+  # })
+
+  output$report_ui <- renderUI({
+    req(input$rep_year)
+
+    fname <- sprintf("tx_ki_summary_%s.html",
+                     input$rep_year)
+
+    tagList(
+
+      tags$style(HTML("
+
+      iframe.reportFrame ~ * {}
+    ")),
+      tags$iframe(
+        class = "reportFrame",
+        src   = fname,
+        style = "width:120%; height:1100px; border:none;"
+      )
+    )
+
   })
 
 
@@ -282,6 +613,9 @@ server <- function(input, output, session) {
     req(input$var_name)
     if (input$var_name == "KDPI"){
       paste("#KDRI Calculate",
+            "#Require External Mapping File",
+            "KDPI_sca = read.csv('data/KDRI_Scale_Fac.csv')",
+            "KDPI_map = read.csv('data/KDPI_Mapping_090424_updateto2023.csv')",
             "tx_kdpi <- tx_ki %>% mutate(KDRI_x = 0.0128*(DON_AGE-40)-0.0194*(DON_AGE-18)*(DON_AGE<18)+0.0107*(DON_AGE-50)*(DON_AGE>50)-0.0464*(DON_HGT_CM-170)/10-",
             "                                     0.0199*(DON_WGT_KG-80)/5+0.179*(DON_RACE==16)+0.126*(DON_HTN==1)+0.13*(DON_HIST_DIAB%in%c(2,3,4,5))+0.0881*(DON_CAD_DON_COD==2)+",
             "                                     0.22*(DON_CREAT-1)-0.209*(DON_CREAT-1.5)*(DON_HIGH_CREAT==1)+0.24*(DON_ANTI_HCV=='P')+0.133*(DON_NON_HR_BEAT=='Y'),",
@@ -289,16 +623,16 @@ server <- function(input, output, session) {
             "                            Year = as.numeric(substring(CAN_LISTING_DT,1,4)))",
             "#Scaling KDRI",
             "for (i in 1:nrow(tx_kdpi)){",
-            "tx_kdpi[i,'KDRI'] = tx_kdpi[i,'KDRI_unsca']/KDPI_sca[which(KDPI_sca$Year==unlist(tx_kdpi[i,'Year'])),'Scale_Fac']",
-            "tx_kdpi[i,'KDPI'] = KDPI_map[which((unlist(tx_kdpi[i,'KDRI'])<=KDPI_map$up)&(unlist(tx_kdpi[i,'KDRI'])>KDPI_map$low)&(KDPI_map$Year==unlist(tx_kdpi[i,'Year']))),'KDPI']",
+            "   tx_kdpi[i,'KDRI'] = tx_kdpi[i,'KDRI_unsca']/KDPI_sca[which(KDPI_sca$Year==unlist(tx_kdpi[i,'Year'])),'Scale_Fac']",
+            "   tx_kdpi[i,'KDPI'] = KDPI_map[which((unlist(tx_kdpi[i,'KDRI'])<=KDPI_map$up)&(unlist(tx_kdpi[i,'KDRI'])>KDPI_map$low)&(KDPI_map$Year==unlist(tx_kdpi[i,'Year']))),'KDPI']",
             "}"
             ,sep="\n")
     }
     else if (input$var_name == "eGFR"){
       paste("#Note that eGFR can be calculated whenever a creatinine measurement is available.",
             "#The following code shows the eGFR calculation for eGFR immediately before transplant.",
-            "tx_kdpi$REC_eGFR = ifelse(temp$CAN_GENDER == 'M',142*pmin(temp$REC_CREAT/0.9,1)^(-0.302)*pmax(temp$REC_CREAT/0.9,1)^(-1.2)*",
-            "0.9938^(temp$REC_AGE_AT_TX),142*pmin(temp$REC_CREAT/0.7,1)^(-0.241)*pmax(temp$REC_CREAT/0.7,1)^(-1.2)*0.9938^(temp$REC_AGE_AT_TX)*1.012)"
+            "tx_kdpi$REC_eGFR = ifelse(tx_kdpi$CAN_GENDER == 'M',142*pmin(tx_kdpi$REC_CREAT/0.9,1)^(-0.302)*pmax(tx_kdpi$REC_CREAT/0.9,1)^(-1.2)*",
+            "0.9938^(tx_kdpi$REC_AGE_AT_TX),142*pmin(tx_kdpi$REC_CREAT/0.7,1)^(-0.241)*pmax(tx_kdpi$REC_CREAT/0.7,1)^(-1.2)*0.9938^(tx_kdpi$REC_AGE_AT_TX)*1.012)"
             ,sep="\n")
     }
     else if (input$var_name == "Post-Transplant Survival"){
@@ -308,6 +642,44 @@ server <- function(input, output, session) {
             "tx_kdpi = tx_kdpi %>% mutate(compdth = ifelse(is.na(TFL_DEATH_DT)==FALSE|is.na(TFL_GRAFT_DT)==FALSE|is.na(PERS_SSA_DEATH_DT)==F|is.na(PERS_OPTN_DEATH_DT)==F, 1, 0),
                                           ptx_death = ifelse(is.na(TFL_DEATH_DT)==FALSE|is.na(PERS_SSA_DEATH_DT)==F|is.na(PERS_OPTN_DEATH_DT)==F, 1, 0),
                                           gft = ifelse(is.na(TFL_GRAFT_DT)==FALSE, 1, 0)",sep="\n")
+    }
+    else if(input$var_name == "Transplant Rate" | input$var_name == "Pre-transplant Mortality Rate"){
+      paste("#Here we calculate the rate for each calendar month. We use the year 2010 as the starting point for illustration. The unit is per person-month.",
+            "dt <- cand_kipa %>%",
+            "      filter(WL_ORG=='KI',as.numeric(substr(CAN_REM_DT,1,4))>=2010 | is.na(CAN_REM_DT), !is.na(CAN_LISTING_DT)) %>%",
+            "      mutate(start_month = pmax(as.numeric(substring(CAN_LISTING_DT,6,7))+12*(as.numeric(substring(CAN_LISTING_DT,1,4))-2010),0),",
+            "             end_month = as.numeric(substring(CAN_REM_DT,6,7))+12*(as.numeric(substr(CAN_REM_DT,1,4))-2010),",
+            "             start_week = pmax(as.numeric(difftime(CAN_LISTING_DT,as.Date('2010-01-01'),units = 'week')),0),",
+            "             end_week = as.numeric(difftime(CAN_REM_DT,as.Date('2010-01-01'),units = 'week')),",
+            "             day_start_month = as.numeric(substring(CAN_LISTING_DT,9,10)),",
+            "             day_end_month = as.numeric(substring(CAN_REM_DT,9,10)))",
+            "Txp_rate_plot_dt <- data.frame(month = c(1:max(dt$end_month,na.rm = T)),Txp_rate = c(NA))",
+            "for (i in 1:(nrow(Txp_rate_plot_dt)-1)) {",
+            "    days_at_month <- ifelse(i%%12 %in% c(1,3,5,7,8,10,0), 31,",
+            "    ifelse(i%%12 == 2 & (i%/%12)%%4==0, 29,",
+            "    ifelse(i%%12 == 2, 28, 30)))",
+            "    dt$age_cur = dt$CAN_AGE_AT_LISTING + floor(i/12) + 2010 - as.numeric(substr(dt$CAN_LISTING_DT,1,4))",
+            "    temp <- dt %>%",
+            "            filter(start_month<=i,end_month>=i|is.na(end_month)) %>%",
+            "            mutate(person_month = ifelse(is.na(end_month),1,",
+            "                                         ifelse(start_month==end_month,(day_end_month-day_start_month)/days_at_month,",
+            "                                                ifelse(start_month==i,(days_at_month+1-day_start_month)/days_at_month,",
+            "                                                       ifelse(end_month==i,day_end_month/days_at_month,1)))))",
+            "                                                                                                                      ",
+            "    temp = temp %>% filter(age_cur >= 70)",
+            "                                                                                                                      ",
+            "    Txp_rate_plot_dt[i,'Txp_count'] <- nrow(dt %>% filter(CAN_REM_CD %in% c(4,15,18,19), end_month == i))",
+            "    Txp_rate_plot_dt[i,'Deceased_Txp_count'] <- nrow(dt %>% filter(CAN_REM_CD %in% c(4), end_month == i))",
+            "    Txp_rate_plot_dt[i,'Txp_free_death_count'] <- nrow(dt %>% filter(CAN_REM_CD==8, end_month == i))",
+            "    Txp_rate_plot_dt[i,'New_waitlisted_count'] <- nrow(dt %>% filter(start_month == i))",
+            "    Txp_rate_plot_dt[i,'Living_Txp_count'] <- nrow(dt %>% filter(CAN_REM_CD %in% c(15), end_month == i))",
+            "    Txp_rate_plot_dt[i,'Person_month'] <- sum(temp$'person_month')",
+            "                                                                                                         ",
+            "    Txp_rate_plot_dt[i,'Txp_rate'] <- Txp_rate_plot_dt[i,'Txp_count']/Txp_rate_plot_dt[i,'Person_month']",
+            "    Txp_rate_plot_dt[i,'Deceased_Txp_rate'] <- Txp_rate_plot_dt[i,'Deceased_Txp_count']/Txp_rate_plot_dt[i,'Person_month']",
+            "    Txp_rate_plot_dt[i,'Txp_free_death_rate'] <- Txp_rate_plot_dt[i,'Txp_free_death_count']/Txp_rate_plot_dt[i,'Person_month']",
+            "    Txp_rate_plot_dt[i,'Living_Txp_rate'] <- Txp_rate_plot_dt[i,'Living_Txp_count']/Txp_rate_plot_dt[i,'Person_month']",
+            "}",sep = "\n")
     }
   })
   ## 4. Explorer plot ----
@@ -345,39 +717,307 @@ server <- function(input, output, session) {
     }
   })
 
-  output$map <- renderLeaflet({
-    radius <- Site$TMR_CadTxR_c*100000
-    paletteNum <- colorNumeric('YlOrRd', domain = opo_map$color_cd)
-    pal = colorBin("Blues", Site$TMR_CadTxR_c, bins = quantile(Site$TMR_CadTxR_c))
-    leaflet() %>%
-      addProviderTiles(providers$CartoDB.Positron) %>%
-      addTiles() %>%
-      setView(lng = -93.85, lat = 37.45, zoom = 5) %>%
-      addPolygons(data = opo_map,
-                  color = 'black',
-                  weight = 2,
-                  smoothFactor = .3,
-                  fillOpacity = .2,
-                  fillColor = ~paletteNum(opo_map$color_cd),
-                  popup = ~htmlEscape(opo_map$opo_ctr_cd)) %>%
-      addCircleMarkers(data = Site, ~Longitude, ~Latitude,
-                       stroke=FALSE, fillOpacity=0.8, color = ~pal(Site$TMR_CadTxR_c), popup = ~paste0("<i>",
-                                                                                                       Site$ENTIRE_NAME,
-                                                                                                       "</i>",
-                                                                                                       "<br/>",
-                                                                                                       "Deceased Donor Transplant Rate: ",
-                                                                                                       round(Site$TMR_CadTxR_c,3))) %>%
-      # addMarkers(data = Site, ~Longitude, ~Latitude)%>%
-      addLegend(pal = pal,
-                values = Site$TMR_CadTxR_c,
-                position = "bottomright",
-                title = "Deceased Donor Transplant Rate")
-    #   addCircles(data=Site, ~Longitude, ~Latitude, radius=radius,
-    #              color="#ffa500", stroke=FALSE, fillOpacity=0.7)  %>%
-    # addLegend(pal = pal,
-    #           values = Site$TMR_CadTxR_c,
-    #           position = "bottomright",
-    #           title = "Transplant Rate (%)")
+  observe({
+    center_data = all_data %>% filter(time_period == input$period)
+    hist_opo_txc = read.csv("data/Center_opo.csv")
+    hist_opo_txc = hist_opo_txc %>% filter(Center.Code %in% center_data$CTR_CD)
+    hist_opo_txc = hist_opo_txc[,-1]
+    if (input$outcome == "Deceased Donor Transplant Rate"){
+      hist_opo_txc$Rate = center_data[match(hist_opo_txc$Center.Code,center_data$CTR_CD),]$TMR_CadTxR_o
+      center_data$Rate = as.numeric(center_data$TMR_CadTxR_c)
+      legend_text = c("DDKT Rate")
+    }
+    else if (input$outcome == "Transplant Rate"){
+      hist_opo_txc$Rate = center_data[match(hist_opo_txc$Center.Code,center_data$CTR_CD),]$TMR_TxR_o
+      center_data$Rate = as.numeric(center_data$TMR_TxR_c)
+      legend_text = c("Tx Rate")
+    }
+    else if (input$outcome == "Pre-transplant Mortality Rate"){
+      hist_opo_txc$Rate = center_data[match(hist_opo_txc$Center.Code,center_data$CTR_CD),]$TMR_DthR_o
+      center_data$Rate = as.numeric(center_data$TMR_DthR_c)
+      legend_text = c("PreTx Dth Rate")
+    }
+
+    opo_map = readRDS("data/opo_map.rds")
+    opo_map$Rate = hist_opo_txc[match(opo_map$opo_ctr_cd,hist_opo_txc$Served.OPO.Code),]$Rate
+    opo_map$Rate = as.numeric(opo_map$Rate)
+    geo_info = read_xls("data/csrs_final_tables_22_11_KI.xls")
+    geo_info = geo_info[-1,] %>% select(CTR_CD,Latitude,Longitude)
+    center_data = merge(center_data,geo_info,by = "CTR_CD")
+
+    Site <- center_data
+    #Site <- merge(Site,center_data[,c("CTR_CD","TMR_CadTxR_c")],all.x = TRUE,by="CTR_CD")
+    Site$Latitude <- as.numeric(Site$Latitude)
+    Site$Longitude <- as.numeric(Site$Longitude)
+    # Site$TMR_CadTxR_c <- as.numeric(Site$TMR_CadTxR_c)
+    # Site$TMR_DthR_c <- as.numeric(Site$TMR_DthR_c)
+
+    output$map <- renderLeaflet({
+      pal = colorBin("YlOrRd", Site$Rate, bins = quantile(Site$Rate))
+      pal2 = colorBin("Greens", opo_map$Rate, bins = quantile(opo_map$Rate))
+      vals$base <- leaflet(options = leafletOptions(zoomSnap = 0.25, zoomDelta=0.25)) %>%
+        addProviderTiles(providers$CartoDB.Positron) %>%
+        addTiles() %>%
+        setView(lng = -93.85, lat = 37.45, zoom = 4.5) %>%
+        addPolygons(data = opo_map,
+                    color = 'black',
+                    weight = 2,
+                    smoothFactor = .3,
+                    fillOpacity = .5,
+                    fillColor = ~pal2(opo_map$Rate),
+                    popup = ~paste0("<i>",
+                                    opo_map$opo_ctr_cd,
+                                    "</i>",
+                                    "<br/>",
+                                    paste0(legend_text," (OPO) (per person-year): "),
+                                    round(opo_map$Rate,3))) %>%
+        addCircleMarkers(data = Site, ~Longitude, ~Latitude,
+                         stroke=FALSE, fillOpacity=0.8, color = ~pal(Site$Rate), popup = ~paste0("<i>",
+                                                                                                         Site$ENTIRE_NAME,
+                                                                                                         "</i>",
+                                                                                                         "<br/>",
+                                                                                                         paste0(legend_text," (Center) (per person-year): "),
+                                                                                                         round(Site$Rate,3))) %>%
+        # addMarkers(data = Site, ~Longitude, ~Latitude)%>%
+        addLegend(pal = pal,
+                  values = Site$Rate,
+                  position = "bottomright",
+                  title = paste0(legend_text," (OPO) (per person-year): ")) %>%
+        addLegend(pal = pal2,
+                  values = opo_map$Rate,
+                  position = "bottomleft",
+                  title = paste0(legend_text," (OPO) (per person-year): "))
+      #   addCircles(data=Site, ~Longitude, ~Latitude, radius=radius,
+      #              color="#ffa500", stroke=FALSE, fillOpacity=0.7)  %>%
+      # addLegend(pal = pal,
+      #           values = Site$TMR_CadTxR_c,
+      #           position = "bottomright",
+      #           title = "Transplant Rate (%)")
+    })
+
+    # reactive values to store map
+    vals <- reactiveValues()
+
+    observeEvent({
+      input$map_zoom
+      input$map_center
+    }, {
+      vals$current <- vals$base %>%
+        setView(lng = input$map_center$lng,
+                lat = input$map_center$lat,
+                zoom = input$map_zoom)
+    }
+    )
+
+    output$dl <- downloadHandler(
+      filename = "map.png",
+      content = function(file) {
+        mapshot(vals$current, file = file,
+                vwidth = input$dimension[1]+500, vheight = input$dimension[2]+250,
+                selfcontained = FALSE)
+      })
+  })
+
+  observeEvent(input$fb_submit, {
+    req(trimws(input$fb_comment) != "")
+
+    new_entry <- data.frame(
+      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+      name      = input$fb_name,
+      email     = input$fb_email,
+      topic     = input$fb_topic,                 # 之前我们改成了“针对哪个 Tab”
+      comment   = gsub("\n", " ", input$fb_comment),
+      stringsAsFactors = FALSE
+    )
+
+    # 统一用 append_row（含文件锁），写到 data/feedback.csv
+    append_row(new_entry, feedback_file)
+
+    output$fb_thanks <- renderUI({
+      tags$div(style = "color:forestgreen; font-weight:600; margin-top:10px;",
+               "Thank you! Your feedback has been recorded.")
+    })
+
+    # 如需本地预览，解开注释即可；此处读 feedback_file（不是裸字符串）
+    # if (interactive()) {
+    #   all_fb <- read.csv(feedback_file, stringsAsFactors = FALSE)
+    #   output$fb_preview <- renderTable(all_fb, striped = TRUE)
+    # }
+
+    updateTextAreaInput(session, "fb_comment", value = "")
+  })
+
+
+  #————————————————————————————————————————————————————————————————
+
+  # ---- reactive reader (every 5 s) ------------------------------------------
+  msg_data <- reactiveFileReader(
+    5000, session, message_file,
+    readFunc = function(f) {
+      if (!file.exists(f)) {
+        return(data.frame(timestamp = character(), msg_id = character(),
+                          parent_id = character(), name = character(),
+                          message = character(), stringsAsFactors = FALSE))
+      }
+      df <- read.csv(f, stringsAsFactors = FALSE, na.strings = c("", "NA"),
+                     encoding = "UTF-8", blank.lines.skip = TRUE)
+      df <- subset(df,
+                   !is.na(msg_id)    & trimws(msg_id)    != "" &
+                     !is.na(timestamp) & trimws(timestamp) != "")
+      df
+    }
+  )
+
+  # ---- post a main message ---------------------------------------------------
+  observeEvent(input$mb_post, {
+    req(trimws(input$mb_text) != "")
+
+    new_row <- data.frame(
+      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+      msg_id    = UUIDgenerate(),
+      parent_id = NA,                         # main post
+      name      = trimws(input$mb_name),
+      email     = trimws(input$mb_email),
+      message   = gsub("\n", " ", input$mb_text),
+      stringsAsFactors = FALSE
+    )
+
+    append_row(new_row, message_file)
+
+    output$mb_ack <- renderUI(tags$span(style="color:forestgreen;",
+                                        "✔ Posted!"))
+    updateTextAreaInput(session, "mb_text", value = "")
+  })
+
+  # ---- show table of main messages ------------------------------------------
+  output$msg_table <- renderDT({
+
+    df <- msg_data()
+    mains <- df[is.na(df$parent_id) | df$parent_id == "", ]
+    mains <- mains[order(mains$timestamp, decreasing = TRUE), ]
+
+    mains$Replies <- vapply(
+      mains$msg_id, function(id) sum(df$parent_id == id, na.rm = TRUE), integer(1)
+    )
+
+    # 1  put msg_id in the FIRST column
+    tbl <- mains[, c("msg_id", "timestamp", "name", "message", "Replies")]
+
+    datatable(
+      tbl,                                 # tbl includes msg_id + columns
+      rownames  = FALSE,
+      selection = "single",
+      options = list(
+        pageLength = 10,
+        columnDefs = list(
+          list(targets = 0, visible = FALSE),   # hide msg_id
+          list(targets = 3, className = "dt-wrap")  # Message column index
+        )
+      ),
+      callback = JS("
+    table.on('dblclick', 'tr', function() {
+      var data = table.row(this, {order:'applied'}).data();
+      Shiny.setInputValue('msg_id_dblclick', data[0], {priority: 'event'});
+    });
+")
+    )
+  })
+
+  # ---- reply UI appears when a row selected ----------------------------------
+  output$reply_ui <- renderUI({
+    sel <- input$msg_table_rows_selected
+    if (length(sel) == 0) return(NULL)
+
+    mains <- msg_data()[is.na(msg_data()$parent_id) | msg_data()$parent_id == "", ]
+    target <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, ]
+
+    tagList(
+      tags$hr(),
+      h4(sprintf("Reply to: \"%s\"", target$message)),
+      textAreaInput("reply_text", "Your reply", rows = 4),
+      actionButton("reply_post", "Send reply", class = "btn-success")
+    )
+  })
+
+  # ---- write reply -----------------------------------------------------------
+  observeEvent(input$reply_post, {
+    sel <- input$msg_table_rows_selected
+    req(sel, trimws(input$reply_text) != "")
+
+    mains <- msg_data()[is.na(msg_data()$parent_id) | msg_data()$parent_id == "", ]
+    target <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, ]
+
+    new_row <- data.frame(
+      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+      msg_id    = UUIDgenerate(),
+      parent_id = target$msg_id,
+      name      = trimws(input$mb_name),
+      email     = trimws(input$mb_email),
+      message   = gsub("\n", " ", input$reply_text),
+      stringsAsFactors = FALSE
+    )
+    append_row(new_row, message_file)
+
+    updateTextAreaInput(session, "reply_text", value = "")
+  })
+
+  # ---- display replies below table (optional) -------------------------------
+  # observe({
+  #   sel <- input$msg_table_dblclick                # <-- see section 2
+  #   if (is.null(sel)) return()
+  #
+  #   df      <- msg_data()
+  #   mains   <- df[is.na(df$parent_id) | df$parent_id == "", ]
+  #   target  <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, "msg_id"]
+  #   replies <- df[df$parent_id == target, ]
+  #
+  #   showModal(modalDialog(
+  #     title = "Replies",
+  #     if (nrow(replies) == 0) {
+  #       tags$em("No replies yet.")
+  #     } else {
+  #       renderTable(replies[, c("timestamp", "name", "message")], rownames = FALSE)
+  #     },
+  #     easyClose = TRUE, size = "l"
+  #   ))
+  # })
+
+  observeEvent(input$msg_id_dblclick, {
+    req(input$msg_id_dblclick)
+
+    df      <- msg_data()
+    target  <- input$msg_id_dblclick
+
+    replies <- subset(df,
+                      parent_id == target &
+                        !is.na(timestamp) & trimws(timestamp) != "",
+                      select = c(timestamp, name, message))
+
+    showModal(modalDialog(
+      title = "Replies",
+      if (nrow(replies) == 0) {
+        tags$em("No replies yet.")
+      } else {
+        # give the table a class so our CSS hits it
+        tags$table(class = "modal-reply table table-striped",
+                   tags$thead(
+                     tags$tr(
+                       tags$th("TIMESTAMP"), tags$th("NAME"), tags$th("MESSAGE")
+                     )
+                   ),
+                   tags$tbody(
+                     lapply(seq_len(nrow(replies)), function(i) {
+                       tags$tr(
+                         tags$td(replies$timestamp[i]),
+                         tags$td(replies$name[i]),
+                         tags$td(replies$message[i])
+                       )
+                     })
+                   )
+        )
+      },
+      easyClose = TRUE, size = "l"
+    ))
   })
 
   # observe({
