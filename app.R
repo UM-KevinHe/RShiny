@@ -18,21 +18,60 @@ library(sf)
 library(htmltools)
 library(filelock)
 library(uuid)
+<<<<<<< HEAD
 
 #webshot::install_phantomjs()
+=======
+>>>>>>> 5655a69bfba4c947f804a5571688aa7ddad103df
 
 safe_includeHTML <- function(path) {
   html <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"),
                 collapse = "\n")
   # strip any bootstrap 3 link
   html <- gsub('<link[^>]*bootstrap[^>]*>', "", html, perl = TRUE)
+  html <- gsub('<script[^>]*bootstrap[^>]*>[\\s\\S]*?</script>', '', html, perl = TRUE)
+  html <- gsub('<script[^>]*jquery[^>]*>[\\s\\S]*?</script>',   '', html, perl = TRUE)
+  html <- gsub('<link[^>]*font[-]?awesome[^>]*>', '', html, perl = TRUE)
   HTML(html)
 }
 
 append_row <- function(df_row, file) {
   dir.create(dirname(file), showWarnings = FALSE, recursive = TRUE)
 
+<<<<<<< HEAD
   df_row[is.na(df_row)] <- ""
+=======
+
+append_row <- function(df_row, file) {
+  dir.create(dirname(file), showWarnings = FALSE, recursive = TRUE)
+
+  df_row[is.na(df_row)] <- ""
+
+  lock <- filelock::lock(paste0(file, ".lock"))
+  on.exit(filelock::unlock(lock), add = TRUE)
+
+  if (!file.exists(file)) {
+    write.table(df_row, file,
+                sep = ",", row.names = FALSE, col.names = TRUE,
+                quote = TRUE, na = "", qmethod = "double")
+  } else {
+    write.table(df_row, file,
+                sep = ",", row.names = FALSE, col.names = FALSE,
+                quote = TRUE, na = "", qmethod = "double", append = TRUE)
+  }
+}
+feedback_dir  <- file.path(getwd(), "data")
+dir.create(feedback_dir, showWarnings = FALSE, recursive = TRUE)
+feedback_file <- file.path(feedback_dir, "feedback.csv")
+message_file  <- file.path(feedback_dir, "message board.csv")
+
+
+
+#setwd("C:/Users/vince/OneDrive/Desktop/Rshiny")
+center_data_1 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 1)
+center_data_2 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 5)
+center_data = data.frame(center_data_1,center_data_2)
+>>>>>>> 5655a69bfba4c947f804a5571688aa7ddad103df
 
   lock <- filelock::lock(paste0(file, ".lock"))
   on.exit(filelock::unlock(lock), add = TRUE)
@@ -102,11 +141,15 @@ ui <- navbarPage(
   # ),
 
   tabPanel(
-    "Data Dictionary (HTML)",
+    "Data Dictionary",
     safe_includeHTML("www/dataDictionary_utf8.html")
   ),
 
+<<<<<<< HEAD
   # --- 3. Summary Report (HTML) -------------
+=======
+  # # --- 3. Summary Report (HTML) -------------
+>>>>>>> 5655a69bfba4c947f804a5571688aa7ddad103df
   # tabPanel(
   #   "Summary Report (HTML)",
   #   tags$iframe(
@@ -115,7 +158,10 @@ ui <- navbarPage(
   #   )
   # ),
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5655a69bfba4c947f804a5571688aa7ddad103df
   tabPanel(
     "Data Summary Report",
     sidebarLayout(
@@ -132,6 +178,7 @@ ui <- navbarPage(
       mainPanel(
         uiOutput("report_ui")
       )
+<<<<<<< HEAD
     )
   ),
   # --- 6. Outcome Definition ---
@@ -223,6 +270,119 @@ ui <- navbarPage(
   #          )
   # ),
 
+=======
+    )
+  ),
+
+  # --- 6. Outcome Definition ---
+  tabPanel(
+    "Variable Definition",
+    sidebarLayout(
+      sidebarPanel(
+        selectInput("var_name", "Choose a variable", choices = c("KDPI","eGFR","Transplant Rate","Post-Transplant Survival",
+                                                                 "Pre-transplant Mortality Rate")),
+        width = 2
+      ),
+      mainPanel(
+        fluidRow(
+          column(
+            width = 12,
+            h3("Variable Definition Table"),
+            tableOutput("table_var"),
+            h3("The following section shows example code on how to build these variables."),
+            h3("You can choose the variable of interest from the left panel.")
+          )
+        ),
+        verbatimTextOutput("code_var")
+      )
+    )
+  ),
+
+
+  # # --- 3. KDPI and EPTS -------------
+  # tabPanel(
+  #   "KDPI and EPTS",
+  #   includeHTML("www/KDPI-and-EPTS-html.html")
+  # ),
+
+  # --- 3. KDPI and EPTS -------------
+  tabPanel(
+    "KDPI and EPTS",
+    tags$head(
+      tags$script(src = "iframeResizer.min.js")
+    ),
+    tags$iframe(
+      src   = "KDPI-and-EPTS-html.html",
+      style = "width:100%; height:1100px; border:none;"
+    ),
+    # activate resizer
+    tags$script("iFrameResize({log:false, checkOrigin:false}, '#rep');")
+  ),
+
+  # # --- 3. KDPI and EPTS -------------
+  # tabPanel(
+  #   "KDPI and EPTS",
+  #   tags$iframe(
+  #     src   = "KDPI-and-EPTS-html.html",
+  #     style = "width:100%; height:1100px; border:none;"
+  #   )
+  # ),
+  # tabPanel(
+  #   "Summary Report (HTML)",
+  #   safe_includeHTML("www/tx_ki_summary_custom.html")
+  # ),
+
+  # tabPanel("Overview",
+  #          fluidRow(
+  #            column(
+  #              width = 12,
+  #              h3("Dataset Overview"),
+  #              includeMarkdown("www/description.md")   # use iframe if PDF/HTML
+  #            )
+  #          )
+  # ),
+
+  # # --- 4. Interactive Dictionary (DT table) ---
+  # tabPanel("Data Dictionary",
+  #          DTOutput("dict_tbl")
+  # ),
+
+  # --- 5. Summary Statistics (interactive) ---
+  # tabPanel("Summary Statistics",
+  #          sidebarLayout(
+  #            sidebarPanel(
+  #              selectInput("var_sum", "Choose a variable", choices = names(tx_ki))
+  #            ),
+  #            mainPanel(
+  #              verbatimTextOutput("sum_text")
+  #            )
+  #          )
+  # ),
+
+  tabPanel(
+    "Center Data",
+    sidebarLayout(
+      sidebarPanel(
+        ## drop-down that looks like a big button (optional shinyWidgets) ----
+        selectInput(
+          inputId  = "sheet",
+          label    = "Select worksheet",
+          choices  = sheet_list,
+          selected = sheet_list[1]
+        ),
+        width = 2
+      ),
+      mainPanel(
+        tabsetPanel(
+          tabPanel("Data table",   DTOutput("tbl")),
+          tabPanel("Summary",      verbatimTextOutput("summary")),
+          tabPanel("Histogram",    uiOutput("plot_ui"))
+        )
+      )
+    )
+  ),
+  # --- Center Geographic Map ---
+>>>>>>> 5655a69bfba4c947f804a5571688aa7ddad103df
   tabPanel("Center Map",
            fluidRow(
              column(
@@ -275,9 +435,13 @@ ui <- navbarPage(
              )
            )
   ),
+<<<<<<< HEAD
 
 
   # --- 7. Explorer (plots) ---
+=======
+  # # --- 7. Explorer (plots) ---
+>>>>>>> 5655a69bfba4c947f804a5571688aa7ddad103df
   # tabPanel("Explorer",
   #          sidebarLayout(
   #            sidebarPanel(
@@ -435,6 +599,11 @@ ui <- navbarPage(
     )
   ),
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 5655a69bfba4c947f804a5571688aa7ddad103df
   # --- 9. About ---
   tabPanel("About",
            HTML("
@@ -444,10 +613,12 @@ ui <- navbarPage(
   )
 )
 
+
 # -------------------- Server -----------------------
 server <- function(input, output, session) {
   all_data = readRDS("data/center_data.rds")
 
+<<<<<<< HEAD
   all_counties_2023 <- read_sas("data/all_counties_2023.sas7bdat.filepart")
   county_dsa <- all_counties_2023 %>%
     mutate(
@@ -592,9 +763,138 @@ server <- function(input, output, session) {
       )
     )
 
+=======
+# ## 1. Data dictionary ----
+# dict <- tibble(
+#   Variable = names(tx_ki),
+#   Class    = sapply(tx_ki, class),
+#   Missing  = colSums(is.na(tx_ki)),
+#   Examples = sapply(tx_ki, \(x) paste0(head(unique(x), 3), collapse = ", "))
+# )
+#
+#   output$dict_tbl <- renderDT(
+#     dict,
+#     options = list(pageLength = 12, scrollX = TRUE),
+#     rownames = FALSE
+#   )
+
+  # output$dict_tbl <- renderDT({
+  #   dat <- tibble(
+  #     Variable = names(tx_ki),
+  #     Class    = sapply(tx_ki, class),
+  #     Missing  = colSums(is.na(tx_ki))
+  #   )
+  #   datatable(dat, options = list(pageLength = 12, scrollX = TRUE))
+  # })
+
+  # 3-2 Data Summary Report – dynamic iframe -------------------------------
+  output$report_ui <- renderUI({
+    req(input$rep_label)
+    file_stub <- report_choices[[input$rep_label]]
+    iframe_src <- sprintf("tx_ki_summary_%s.html", file_stub)
+
+    tags$iframe(src   = iframe_src,
+                style = "width:100%; height:1100px; border:none;")
+  })
+
+  # 3-3 Workbook Explorer – read selected sheet on demand ------------------
+  sheet_data <- reactive({
+
+    raw <- read_excel(
+      path        = excel_path,
+      sheet       = input$sheet,
+      col_names   = FALSE
+    )
+
+    line1 <- raw %>% slice(1) %>% unlist(use.names = FALSE) %>% as.character()
+    line2 <- raw %>% slice(2) %>% unlist(use.names = FALSE) %>% as.character()
+
+    new_names <- paste0(line1, "(", line2, ")")
+    new_names <- make.unique(new_names)
+
+    df <- raw %>% slice(-c(1, 2))
+    names(df) <- new_names
+
+    df <- type_convert(df, na = c("", "NA"))
+
+    date_candidates <- grepl("DATE|DT|_DT$", names(df), ignore.case = TRUE) &
+      sapply(df, is.numeric)
+
+    df[date_candidates] <- lapply(df[date_candidates],
+                                  \(x) as.Date(x, origin = "1899-12-30"))
+
+    df
+  }) %>% bindCache(input$sheet)
+
+  output$tbl <- renderDT({
+    datatable(sheet_data(),
+              escape     = FALSE,
+              filter = "top",
+              options = list(pageLength = 15, scrollX = TRUE),
+              extensions = "Buttons",
+              rownames = FALSE)
+  })
+
+  output$summary <- renderPrint({
+    df <- sheet_data()
+    num_cols <- sapply(df, is.numeric)
+    summary(df[ , num_cols])
+  })
+
+  output$plot_ui <- renderUI({
+    df <- sheet_data()
+    num_cols <- names(df)[sapply(df, is.numeric)]
+    if (length(num_cols) == 0)
+      return(h4("No numeric columns."))
+    tagList(
+      selectInput("num_var", "Pick a numeric column", choices = num_cols),
+      plotOutput("hist")
+    )
+  })
+
+  output$hist <- renderPlot({
+    req(input$num_var)
+    x <- sheet_data()[[input$num_var]]
+
+    if (inherits(x, "Date")) {
+      hist(x, main = paste("Histogram of", input$num_var),
+           xlab = input$num_var, freq = TRUE, breaks = "months")
+    } else {
+      hist(x, col = "#3E8ACC", border = "white",
+           main = paste("Histogram of", input$num_var),
+           xlab  = input$num_var)
+    }
+>>>>>>> 5655a69bfba4c947f804a5571688aa7ddad103df
   })
 
 
+  # ## 2. Summary statistics ----
+  # output$sum_text <- renderPrint({
+  #   req(input$var_sum)
+  #   x <- tx_ki[[input$var_sum]]
+  #   if (is.numeric(x)) summary(x) else table(x, useNA = "ifany")
+  # })
+
+  output$report_ui <- renderUI({
+    req(input$rep_year)
+
+    fname <- sprintf("tx_ki_summary_%s.html",
+                     input$rep_year)
+
+    tagList(
+
+      tags$style(HTML("
+
+      iframe.reportFrame ~ * {}
+    ")),
+      tags$iframe(
+        class = "reportFrame",
+        src   = fname,
+        style = "width:120%; height:1100px; border:none;"
+      )
+    )
+
+  })
 
   ## 3. Var Definition
   table_var = data.frame("Variable Name" = c("KDPI","eGFR","Post-Transplant Survival",
@@ -683,39 +983,39 @@ server <- function(input, output, session) {
     }
   })
   ## 4. Explorer plot ----
-  output$dist_plot <- renderPlot({
-    req(input$var_plot)
-    var <- input$var_plot
-    x   <- tx_ki[[var]]
-
-    if (!input$by_group) {
-      if (is.numeric(x)) {
-        hist(
-          x, main = paste("Histogram of", var),
-          xlab = var, col = "#3E8ACC", border = "white"
-        )
-      } else {
-        barplot(
-          table(x), main = paste("Bar plot of", var),
-          col = "#2ECC71", las = 2
-        )
-      }
-    } else {
-      req(input$grp_var)
-      g <- input$grp_var
-      if (is.numeric(x)) {
-        tx_ki %>%
-          ggplot(aes(.data[[g]], .data[[var]])) +
-          geom_boxplot(fill = "#3E8ACC") +
-          labs(x = g, y = var)
-      } else {
-        tx_ki %>%
-          ggplot(aes(.data[[g]], fill = .data[[var]])) +
-          geom_bar(position = "dodge") +
-          labs(x = g, y = "Count")
-      }
-    }
-  })
+  # output$dist_plot <- renderPlot({
+  #   req(input$var_plot)
+  #   var <- input$var_plot
+  #   x   <- tx_ki[[var]]
+  #
+  #   if (!input$by_group) {
+  #     if (is.numeric(x)) {
+  #       hist(
+  #         x, main = paste("Histogram of", var),
+  #         xlab = var, col = "#3E8ACC", border = "white"
+  #       )
+  #     } else {
+  #       barplot(
+  #         table(x), main = paste("Bar plot of", var),
+  #         col = "#2ECC71", las = 2
+  #       )
+  #     }
+  #   } else {
+  #     req(input$grp_var)
+  #     g <- input$grp_var
+  #     if (is.numeric(x)) {
+  #       tx_ki %>%
+  #         ggplot(aes(.data[[g]], .data[[var]])) +
+  #         geom_boxplot(fill = "#3E8ACC") +
+  #         labs(x = g, y = var)
+  #     } else {
+  #       tx_ki %>%
+  #         ggplot(aes(.data[[g]], fill = .data[[var]])) +
+  #         geom_bar(position = "dodge") +
+  #         labs(x = g, y = "Count")
+  #     }
+  #   }
+  # })
 
   observe({
     center_data = all_data %>% filter(time_period == input$period)
@@ -1050,6 +1350,212 @@ server <- function(input, output, session) {
   #   filter = "top",
   #   extensions = "Buttons"
   # )
+
+
+
+
+  observeEvent(input$fb_submit, {
+    req(trimws(input$fb_comment) != "")
+
+    new_entry <- data.frame(
+      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+      name      = input$fb_name,
+      email     = input$fb_email,
+      topic     = input$fb_topic,                 # 之前我们改成了“针对哪个 Tab”
+      comment   = gsub("\n", " ", input$fb_comment),
+      stringsAsFactors = FALSE
+    )
+
+    # 统一用 append_row（含文件锁），写到 data/feedback.csv
+    append_row(new_entry, feedback_file)
+
+    output$fb_thanks <- renderUI({
+      tags$div(style = "color:forestgreen; font-weight:600; margin-top:10px;",
+               "Thank you! Your feedback has been recorded.")
+    })
+
+    # 如需本地预览，解开注释即可；此处读 feedback_file（不是裸字符串）
+    # if (interactive()) {
+    #   all_fb <- read.csv(feedback_file, stringsAsFactors = FALSE)
+    #   output$fb_preview <- renderTable(all_fb, striped = TRUE)
+    # }
+
+    updateTextAreaInput(session, "fb_comment", value = "")
+  })
+
+
+  #————————————————————————————————————————————————————————————————
+
+  # ---- reactive reader (every 5 s) ------------------------------------------
+  msg_data <- reactiveFileReader(
+    5000, session, message_file,
+    readFunc = function(f) {
+      if (!file.exists(f)) {
+        return(data.frame(timestamp = character(), msg_id = character(),
+                          parent_id = character(), name = character(),
+                          message = character(), stringsAsFactors = FALSE))
+      }
+      df <- read.csv(f, stringsAsFactors = FALSE, na.strings = c("", "NA"),
+                     encoding = "UTF-8", blank.lines.skip = TRUE)
+      df <- subset(df,
+                   !is.na(msg_id)    & trimws(msg_id)    != "" &
+                     !is.na(timestamp) & trimws(timestamp) != "")
+      df
+    }
+  )
+
+  # ---- post a main message ---------------------------------------------------
+  observeEvent(input$mb_post, {
+    req(trimws(input$mb_text) != "")
+
+    new_row <- data.frame(
+      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+      msg_id    = UUIDgenerate(),
+      parent_id = NA,                         # main post
+      name      = trimws(input$mb_name),
+      email     = trimws(input$mb_email),
+      message   = gsub("\n", " ", input$mb_text),
+      stringsAsFactors = FALSE
+    )
+
+    append_row(new_row, message_file)
+
+    output$mb_ack <- renderUI(tags$span(style="color:forestgreen;",
+                                        "✔ Posted!"))
+    updateTextAreaInput(session, "mb_text", value = "")
+  })
+
+  # ---- show table of main messages ------------------------------------------
+  output$msg_table <- renderDT({
+
+    df <- msg_data()
+    mains <- df[is.na(df$parent_id) | df$parent_id == "", ]
+    mains <- mains[order(mains$timestamp, decreasing = TRUE), ]
+
+    mains$Replies <- vapply(
+      mains$msg_id, function(id) sum(df$parent_id == id, na.rm = TRUE), integer(1)
+    )
+
+    # 1  put msg_id in the FIRST column
+    tbl <- mains[, c("msg_id", "timestamp", "name", "message", "Replies")]
+
+    datatable(
+      tbl,                                 # tbl includes msg_id + columns
+      rownames  = FALSE,
+      selection = "single",
+      options = list(
+        pageLength = 10,
+        columnDefs = list(
+          list(targets = 0, visible = FALSE),   # hide msg_id
+          list(targets = 3, className = "dt-wrap")  # Message column index
+        )
+      ),
+      callback = JS("
+    table.on('dblclick', 'tr', function() {
+      var data = table.row(this, {order:'applied'}).data();
+      Shiny.setInputValue('msg_id_dblclick', data[0], {priority: 'event'});
+    });
+")
+    )
+  })
+
+  # ---- reply UI appears when a row selected ----------------------------------
+  output$reply_ui <- renderUI({
+    sel <- input$msg_table_rows_selected
+    if (length(sel) == 0) return(NULL)
+
+    mains <- msg_data()[is.na(msg_data()$parent_id) | msg_data()$parent_id == "", ]
+    target <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, ]
+
+    tagList(
+      tags$hr(),
+      h4(sprintf("Reply to: \"%s\"", target$message)),
+      textAreaInput("reply_text", "Your reply", rows = 4),
+      actionButton("reply_post", "Send reply", class = "btn-success")
+    )
+  })
+
+  # ---- write reply -----------------------------------------------------------
+  observeEvent(input$reply_post, {
+    sel <- input$msg_table_rows_selected
+    req(sel, trimws(input$reply_text) != "")
+
+    mains <- msg_data()[is.na(msg_data()$parent_id) | msg_data()$parent_id == "", ]
+    target <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, ]
+
+    new_row <- data.frame(
+      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+      msg_id    = UUIDgenerate(),
+      parent_id = target$msg_id,
+      name      = trimws(input$mb_name),
+      email     = trimws(input$mb_email),
+      message   = gsub("\n", " ", input$reply_text),
+      stringsAsFactors = FALSE
+    )
+    append_row(new_row, message_file)
+
+    updateTextAreaInput(session, "reply_text", value = "")
+  })
+
+  # ---- display replies below table (optional) -------------------------------
+  # observe({
+  #   sel <- input$msg_table_dblclick                # <-- see section 2
+  #   if (is.null(sel)) return()
+  #
+  #   df      <- msg_data()
+  #   mains   <- df[is.na(df$parent_id) | df$parent_id == "", ]
+  #   target  <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, "msg_id"]
+  #   replies <- df[df$parent_id == target, ]
+  #
+  #   showModal(modalDialog(
+  #     title = "Replies",
+  #     if (nrow(replies) == 0) {
+  #       tags$em("No replies yet.")
+  #     } else {
+  #       renderTable(replies[, c("timestamp", "name", "message")], rownames = FALSE)
+  #     },
+  #     easyClose = TRUE, size = "l"
+  #   ))
+  # })
+
+  observeEvent(input$msg_id_dblclick, {
+    req(input$msg_id_dblclick)
+
+    df      <- msg_data()
+    target  <- input$msg_id_dblclick
+
+    replies <- subset(df,
+                      parent_id == target &
+                        !is.na(timestamp) & trimws(timestamp) != "",
+                      select = c(timestamp, name, message))
+
+    showModal(modalDialog(
+      title = "Replies",
+      if (nrow(replies) == 0) {
+        tags$em("No replies yet.")
+      } else {
+        # give the table a class so our CSS hits it
+        tags$table(class = "modal-reply table table-striped",
+                   tags$thead(
+                     tags$tr(
+                       tags$th("TIMESTAMP"), tags$th("NAME"), tags$th("MESSAGE")
+                     )
+                   ),
+                   tags$tbody(
+                     lapply(seq_len(nrow(replies)), function(i) {
+                       tags$tr(
+                         tags$td(replies$timestamp[i]),
+                         tags$td(replies$name[i]),
+                         tags$td(replies$message[i])
+                       )
+                     })
+                   )
+        )
+      },
+      easyClose = TRUE, size = "l"
+    ))
+  })
+
 }
 
 # -------------------- Run app ----------------------
