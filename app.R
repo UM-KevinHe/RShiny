@@ -116,24 +116,24 @@ ui <- navbarPage(
   # ),
 
 
-  tabPanel(
-    "Data Summary Report",
-    sidebarLayout(
-      sidebarPanel(
-        selectInput(
-          inputId  = "rep_year",
-          label    = "Transplant Year (REC_TX_DT)",
-          choices  = c("1987-2025 (Full)", "2015-2025 (Frequently Used)", "2015", "2016", "2017"
-                       , "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"),
-          selected = "1987-2025 (Full)"
-        ),
-        width = 2
-      ),
-      mainPanel(
-        uiOutput("report_ui")
-      )
-    )
-  ),
+  # tabPanel(
+  #   "Data Summary Report",
+  #   sidebarLayout(
+  #     sidebarPanel(
+  #       selectInput(
+  #         inputId  = "rep_year",
+  #         label    = "Transplant Year (REC_TX_DT)",
+  #         choices  = c("1987-2025 (Full)", "2015-2025 (Frequently Used)", "2015", "2016", "2017"
+  #                      , "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"),
+  #         selected = "1987-2025 (Full)"
+  #       ),
+  #       width = 2
+  #     ),
+  #     mainPanel(
+  #       uiOutput("report_ui")
+  #     )
+  #   )
+  # ),
   # --- 6. Outcome Definition ---
   tabPanel(
     "Variable Definition",
