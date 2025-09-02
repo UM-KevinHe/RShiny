@@ -19,7 +19,38 @@ library(htmltools)
 library(filelock)
 library(uuid)
 
-#webshot::install_phantomjs()
+# webshot::install_phantomjs()
+
+# ---- Screenshot backend bootstrap (runs once per R session) ----
+# Prefer webshot2 (no PhantomJS needed). If webshot2 is missing, fall back to
+# webshot + PhantomJS and install PhantomJS only when it's not present.
+ensure_screenshot_backend <- function() {
+  # 1) Prefer webshot2 (no system PhantomJS required)
+  if (requireNamespace("webshot2", quietly = TRUE)) return("webshot2")
+
+  # 2) Fallback to webshot + PhantomJS
+  if (requireNamespace("webshot", quietly = TRUE)) {
+    # Safely check whether PhantomJS is already installed
+    ok <- tryCatch(webshot::is_phantomjs_installed(), error = function(e) FALSE)
+
+    # If missing, try to install once; force=TRUE bypasses NA version checks
+    if (!ok) {
+      tryCatch({
+        webshot::install_phantomjs(force = TRUE)  # install only when missing
+      }, error = function(e) {
+        message("PhantomJS install failed: ", conditionMessage(e))
+      })
+      ok <- tryCatch(webshot::is_phantomjs_installed(), error = function(e) FALSE)
+    }
+
+    # If PhantomJS is available, we can use webshot
+    return(if (ok) "webshot" else "none")
+  }
+
+  # 3) Neither webshot2 nor webshot is available
+  "none"
+}
+
 
 safe_includeHTML <- function(path) {
   html <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"),
@@ -47,10 +78,21 @@ append_row <- function(df_row, file) {
                 quote = TRUE, na = "", qmethod = "double", append = TRUE)
   }
 }
-feedback_dir  <- file.path(getwd(), "data")
-dir.create(feedback_dir, showWarnings = FALSE, recursive = TRUE)
-feedback_file <- file.path(feedback_dir, "feedback.csv")
-message_file  <- file.path(feedback_dir, "message board.csv")
+
+# ------------- Feedback form URLs ------------------
+form_url_full  <- "https://forms.gle/BQu99QmkQrZHLYiC8"
+form_url_embed <- "https://docs.google.com/forms/d/e/1FAIpQLSfjD9MNAlupwUw8xYQ-emu1Qiv-IemUP_KU1DDJZAQiOARGdg/viewform?embedded=true"  #
+
+# -------------------- Load data --------------------
+
+center_data_1 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 1)
+center_data_2 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 5)
+center_data = data.frame(center_data_1,center_data_2)
+
+
+excel_path <- "data/csrs_final_tables_2505_KI.xls"
+sheet_list <- excel_sheets(excel_path)
+
 
 time = c("January 2018", "July 2018", "January 2019", "July 2019", "January 2020", "July 2020",
          "January 2021", "July 2021", "January 2022", "July 2022", "January 2023", "July 2023",
@@ -92,53 +134,20 @@ ui <- navbarPage(
     )
   ),
 
-  # --- 2. HTML – Data Dictionary (static) ---
-  # tabPanel(
-  #   "Data Dictionary (HTML)",
-  #   tags$iframe(
-  #     src   = "dataDictionary_utf8.html",
-  #     style = "width:100%; height:900px; border:none;"
-  #   )
-  # ),
+  # --- 2. Data Dictionary ---
+
 
   tabPanel(
-    "Data Dictionary (HTML)",
+    "Data Dictionary",
     safe_includeHTML("www/dataDictionary_utf8.html")
   ),
 
-  # --- 3. Summary Report (HTML) -------------
-  # tabPanel(
-  #   "Summary Report (HTML)",
-  #   tags$iframe(
-  #     src   = "tx_ki_summary_custom1.html",
-  #     style = "width:100%; height:1100px; border:none;"
-  #   )
-  # ),
-
-
-  # tabPanel(
-  #   "Data Summary Report",
-  #   sidebarLayout(
-  #     sidebarPanel(
-  #       selectInput(
-  #         inputId  = "rep_year",
-  #         label    = "Transplant Year (REC_TX_DT)",
-  #         choices  = c("1987-2025 (Full)", "2015-2025 (Frequently Used)", "2015", "2016", "2017"
-  #                      , "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"),
-  #         selected = "1987-2025 (Full)"
-  #       ),
-  #       width = 2
-  #     ),
-  #     mainPanel(
-  #       uiOutput("report_ui")
-  #     )
-  #   )
-  # ),
-  # --- 6. Outcome Definition ---
+  # --- 3. Outcome Definition ---
   tabPanel(
     "Variable Definition",
     sidebarLayout(
       sidebarPanel(
+        width = 3,
         selectInput("var_name", "Choose a variable", choices = c("KDPI","eGFR","Transplant Rate","Post-Transplant Survival",
                                                                 "Pre-transplant Mortality Rate"))
       ),
@@ -163,13 +172,8 @@ ui <- navbarPage(
     )
   ),
 
-  # # --- 3. KDPI and EPTS -------------
-  # tabPanel(
-  #   "KDPI and EPTS",
-  #   includeHTML("www/KDPI-and-EPTS-html.html")
-  # ),
 
-  # --- 3. KDPI and EPTS -------------
+  # --- 4. KDPI and EPTS -------------
   tabPanel(
     "KDPI and EPTS",
     tags$head(
@@ -183,45 +187,10 @@ ui <- navbarPage(
     tags$script("iFrameResize({log:false, checkOrigin:false}, '#rep');")
   ),
 
-  # # --- 3. KDPI and EPTS -------------
-  # tabPanel(
-  #   "KDPI and EPTS",
-  #   tags$iframe(
-  #     src   = "KDPI-and-EPTS-html.html",
-  #     style = "width:100%; height:1100px; border:none;"
-  #   )
-  # ),
-  # tabPanel(
-  #   "Summary Report (HTML)",
-  #   safe_includeHTML("www/tx_ki_summary_custom.html")
-  # ),
 
-  # tabPanel("Overview",
-  #          fluidRow(
-  #            column(
-  #              width = 12,
-  #              h3("Dataset Overview"),
-  #              includeMarkdown("www/description.md")   # use iframe if PDF/HTML
-  #            )
-  #          )
-  # ),
 
-  # # --- 4. Interactive Dictionary (DT table) ---
-  # tabPanel("Data Dictionary",
-  #          DTOutput("dict_tbl")
-  # ),
+  # --- 5. Center Map -------------
 
-  # --- 5. Summary Statistics (interactive) ---
-  # tabPanel("Summary Statistics",
-  #          sidebarLayout(
-  #            sidebarPanel(
-  #              selectInput("var_sum", "Choose a variable", choices = names(tx_ki))
-  #            ),
-  #            mainPanel(
-  #              verbatimTextOutput("sum_text")
-  #            )
-  #          )
-  # ),
 
   tabPanel("Center Map",
            fluidRow(
@@ -276,154 +245,38 @@ ui <- navbarPage(
            )
   ),
 
+  # --- 6. Center Data -------------
 
-  # --- 7. Explorer (plots) ---
-  # tabPanel("Explorer",
-  #          sidebarLayout(
-  #            sidebarPanel(
-  #              selectInput("var_plot", "Variable to plot", choices = names(tx_ki)),
-  #              checkboxInput("by_group", "Display by group"),
-  #              conditionalPanel(
-  #                condition = "input.by_group == true",
-  #                selectInput("grp_var", "Grouping variable", choices = names(tx_ki))
-  #              )
-  #            ),
-  #            mainPanel(
-  #              plotOutput("dist_plot", height = "500px")
-  #            )
-  #          )
-  # ),
-  # --- 8. Outcome Exploration ---
-  # tabPanel("Outcome Exploration",
-  #          sidebarLayout(
-  #            sidebarPanel(
-  #              selectInput("group_plot", "Variable to group by", choices = c("Transplant Type","Age","Gender","Diabetes","Waiting Time")),
-  #            ),
-  #            mainPanel(
-  #              h3("This panel explores post-transplant survival. The first plot is a 2-year Kaplan-Meier plot comparing waitlist to different transplant types."),
-  #              img(src = "2yr Compare Version 2.png", align = "left", width = 1100, height = 900),
-  #              h3("This panel explores post-transplant survival. The next plot is a 2-year Relative Risk plot comparing waitlist to different transplant types."),
-  #              h3("You may indicate the grouping variable in the left panel."),
-  #              img(src = "RR 2yr Compare.png", align = "left", width = 1100, height = 900)
-  #              #plotOutput("outcome_plot", height = "500px")
-  #            )
-  #          )
-  # ),
-  # # --- 7. Raw Data ---
-  # tabPanel("Raw Data",
-  #          DTOutput("raw_tbl")
-  # ),
-
-  ## --- New tab: Feedback ------------------------------------------------------
-  # --- Feedback (2-column layout) ---
   tabPanel(
-    "Feedback",
-    # 一点点样式：让右侧评论框更高、提交按钮铺满
-    tags$head(tags$style(HTML("
-    #fb_comment { min-height: 380px; }   /* 右侧评论框高度 */
-  "))),
-    fluidRow(
-      column(
-        width = 10, offset = 1,   # 居中；想全宽就换成 width=12, offset=0
-        tags$div(
-          class = "card shadow-sm p-3",
-          h3("We'd love your feedback"),
-          tags$p("Tell us which tab your comment is about and what we can improve."),
-          fluidRow(
-            # ------ 左侧表单（name / email / which tab） ------
-            column(
-              width = 4, class = "fb-left",
-              textInput("fb_name",  "Your Name (optional)"),
-              textInput("fb_email", "E-mail (optional)"),
-              selectInput(
-                "fb_topic",
-                "Which tab is your feedback about?",
-                choices = c(
-                  "Overview",
-                  "Data Dictionary",
-                  "Data Summary Report",
-                  "Variable Definition",
-                  "KDPI and EPTS",
-                  "Center Data",
-                  "Center Map",
-                  "Outcome Exploration",
-                  "Message Board",
-                  "Data Use Agreement",
-                  "About",
-                  "Other / General"
-                ),
-                selected = "Overview"
-              )
-            ),
-            # ------ 右侧（大）评论框 + 提交按钮 ------
-            column(
-              width = 8, class = "fb-right",
-              textAreaInput(
-                "fb_comment",
-                "Comments / Suggestions",
-                placeholder = "Tell us how we can improve…",
-                rows = 16, width = "100%"
-              ),
-              div(class = "mt-3",
-                  actionButton("fb_submit", "Submit",
-                               class = "btn btn-primary btn-lg w-100"))
-            )
-          ),
-          # 提交后的提示
-          uiOutput("fb_thanks")
-          # 如果之前你还保留了预览表，请确保已移除 tableOutput("fb_preview")
+    "Center Data",
+    sidebarLayout(
+      sidebarPanel(
+        ## drop-down that looks like a big button (optional shinyWidgets) ----
+        selectInput(
+          inputId  = "sheet",
+          label    = "Select worksheet",
+          choices  = sheet_list,
+          selected = sheet_list[1]
+        ),
+        width = 2
+      ),
+      mainPanel(
+        tabsetPanel(
+          tabPanel("Data table",   DTOutput("tbl")),
+          tabPanel("Summary",      verbatimTextOutput("summary")),
+          tabPanel("Histogram",    uiOutput("plot_ui"))
         )
       )
     )
-  )
-  ,
-
-  # ---------------------------------------------------------------------------
-  tabPanel("Message Board",
-           fluidRow(
-             column(
-               width = 3,
-               textInput("mb_name", "Name (optional)"),
-               textInput("mb_email", "E-mail (optional)"),
-               textAreaInput("mb_text", "Leave a message", rows = 5),
-               actionButton("mb_post", "Post", class = "btn-primary"),
-               uiOutput("mb_ack"),
-               ## ---------- hint box ----------------------------------------------------
-               tags$div(
-                 style = "font-size: 0.85em; color: #6c757d; margin-top: 8px;",
-                 "• Auto-refresh every 5 s", tags$br(),
-                 "• Double-click a row to see replies"
-               ),
-               tags$head(
-                 tags$style(HTML("
-    /* word-wrap for every <td> generated by DT or renderTable ---------*/
-    td.dt-wrap, table.modal-reply td {
-      white-space: normal !important;   /* allow wrapping          */
-      word-break: break-word;           /* break long words/URLs   */
-    }
-  "))
-               )
-
-             ),
-             column(9,
-                    h4("Messages"),
-                    # helpText("Auto-refreshes every 5 seconds • Double-click a row to view replies"),
-                    # helpText("Tip: highlight with one click, open replies with a double-click"),
-                    DTOutput("msg_table"),
-                    uiOutput("reply_ui")               # appears when a row is selected
-             )
-
-           )
   ),
 
 
-
-  # --- Data Use Agreement (new tab) ---
+  # --- 7. Data Use Agreement ---
   tabPanel(
     "Data Use Agreement",
     fluidRow(
       column(
-        width = 10, offset = 1,   # 居中显示
+        width = 10, offset = 1,
         h3("Data Use Agreement (Selected Clauses)"),
         tags$p("The following clauses are reproduced verbatim:"),
         tags$ol(
@@ -434,6 +287,34 @@ ui <- navbarPage(
       )
     )
   ),
+
+  # --- 8. Feedback (embed + local header) ---
+  tabPanel(
+    "Feedback",
+    fluidRow(
+      column(
+        width = 10, offset = 1,
+        tags$div(class = "card shadow-sm p-3",
+                 # tags$img(src = "um_bio_header.png",
+                 #          style = "max-width:50%; height:auto; border-radius:8px; margin-bottom:12px;"),
+                 h3("We value your feedback"),
+                 tags$p("Please use the Google Form below to share your suggestions or questions. Thank you!"),
+                 tags$a(href = form_url_full, target = "_blank",
+                        class = "btn btn-primary btn-lg mb-3", "Open the feedback form"),
+                 tags$div(
+                   style = "background:#FFF6D6; border:1px solid #F2D57E; border-radius:12px; padding:8px;",
+                   tags$iframe(
+                     src   = form_url_embed,
+                     style = "width:100%; height:900px; border:none; background:transparent;"
+                   )
+                 ),
+                 tags$p(class = "mt-3 text-muted",
+                        "We value your feedback. Please use the Google Form below to share your suggestions or questions. Thank you!")
+        )
+      )
+    )
+  ),
+
 
   # --- 9. About ---
   tabPanel("About",
@@ -446,6 +327,10 @@ ui <- navbarPage(
 
 # -------------------- Server -----------------------
 server <- function(input, output, session) {
+
+  # Detect/prepare the screenshot backend once per session
+  backend <- ensure_screenshot_backend()
+
   all_data = readRDS("data/center_data.rds")
 
   all_counties_2023 <- read_sas("data/all_counties_2023.sas7bdat.filepart")
@@ -812,244 +697,27 @@ server <- function(input, output, session) {
     output$dl <- downloadHandler(
       filename = "map.png",
       content = function(file) {
-        mapshot(vals$current, file = file,
-                vwidth = input$dimension[1]+500, vheight = input$dimension[2]+250,
-                selfcontained = FALSE)
-      })
-  })
-
-  observeEvent(input$fb_submit, {
-    req(trimws(input$fb_comment) != "")
-
-    new_entry <- data.frame(
-      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
-      name      = input$fb_name,
-      email     = input$fb_email,
-      topic     = input$fb_topic,                 # 之前我们改成了“针对哪个 Tab”
-      comment   = gsub("\n", " ", input$fb_comment),
-      stringsAsFactors = FALSE
-    )
-
-    # 统一用 append_row（含文件锁），写到 data/feedback.csv
-    append_row(new_entry, feedback_file)
-
-    output$fb_thanks <- renderUI({
-      tags$div(style = "color:forestgreen; font-weight:600; margin-top:10px;",
-               "Thank you! Your feedback has been recorded.")
-    })
-
-    # 如需本地预览，解开注释即可；此处读 feedback_file（不是裸字符串）
-    # if (interactive()) {
-    #   all_fb <- read.csv(feedback_file, stringsAsFactors = FALSE)
-    #   output$fb_preview <- renderTable(all_fb, striped = TRUE)
-    # }
-
-    updateTextAreaInput(session, "fb_comment", value = "")
-  })
-
-
-  #————————————————————————————————————————————————————————————————
-
-  # ---- reactive reader (every 5 s) ------------------------------------------
-  msg_data <- reactiveFileReader(
-    5000, session, message_file,
-    readFunc = function(f) {
-      if (!file.exists(f)) {
-        return(data.frame(timestamp = character(), msg_id = character(),
-                          parent_id = character(), name = character(),
-                          message = character(), stringsAsFactors = FALSE))
+        if (backend %in% c("webshot2", "webshot")) {
+          # mapview::mapshot() will pick the available backend
+          mapview::mapshot(
+            vals$current, file = file,
+            vwidth  = input$dimension[1] + 500,
+            vheight = input$dimension[2] + 250,
+            selfcontained = FALSE
+          )
+        } else {
+          showNotification(
+            "Screenshot backend unavailable. Please install {webshot2} (recommended) or {webshot}+PhantomJS.",
+            type = "error"
+          )
+        }
       }
-      df <- read.csv(f, stringsAsFactors = FALSE, na.strings = c("", "NA"),
-                     encoding = "UTF-8", blank.lines.skip = TRUE)
-      df <- subset(df,
-                   !is.na(msg_id)    & trimws(msg_id)    != "" &
-                     !is.na(timestamp) & trimws(timestamp) != "")
-      df
-    }
-  )
-
-  # ---- post a main message ---------------------------------------------------
-  observeEvent(input$mb_post, {
-    req(trimws(input$mb_text) != "")
-
-    new_row <- data.frame(
-      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
-      msg_id    = UUIDgenerate(),
-      parent_id = NA,                         # main post
-      name      = trimws(input$mb_name),
-      email     = trimws(input$mb_email),
-      message   = gsub("\n", " ", input$mb_text),
-      stringsAsFactors = FALSE
     )
 
-    append_row(new_row, message_file)
-
-    output$mb_ack <- renderUI(tags$span(style="color:forestgreen;",
-                                        "✔ Posted!"))
-    updateTextAreaInput(session, "mb_text", value = "")
   })
 
-  # ---- show table of main messages ------------------------------------------
-  output$msg_table <- renderDT({
 
-    df <- msg_data()
-    mains <- df[is.na(df$parent_id) | df$parent_id == "", ]
-    mains <- mains[order(mains$timestamp, decreasing = TRUE), ]
 
-    mains$Replies <- vapply(
-      mains$msg_id, function(id) sum(df$parent_id == id, na.rm = TRUE), integer(1)
-    )
-
-    # 1  put msg_id in the FIRST column
-    tbl <- mains[, c("msg_id", "timestamp", "name", "message", "Replies")]
-
-    datatable(
-      tbl,                                 # tbl includes msg_id + columns
-      rownames  = FALSE,
-      selection = "single",
-      options = list(
-        pageLength = 10,
-        columnDefs = list(
-          list(targets = 0, visible = FALSE),   # hide msg_id
-          list(targets = 3, className = "dt-wrap")  # Message column index
-        )
-      ),
-      callback = JS("
-    table.on('dblclick', 'tr', function() {
-      var data = table.row(this, {order:'applied'}).data();
-      Shiny.setInputValue('msg_id_dblclick', data[0], {priority: 'event'});
-    });
-")
-    )
-  })
-
-  # ---- reply UI appears when a row selected ----------------------------------
-  output$reply_ui <- renderUI({
-    sel <- input$msg_table_rows_selected
-    if (length(sel) == 0) return(NULL)
-
-    mains <- msg_data()[is.na(msg_data()$parent_id) | msg_data()$parent_id == "", ]
-    target <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, ]
-
-    tagList(
-      tags$hr(),
-      h4(sprintf("Reply to: \"%s\"", target$message)),
-      textAreaInput("reply_text", "Your reply", rows = 4),
-      actionButton("reply_post", "Send reply", class = "btn-success")
-    )
-  })
-
-  # ---- write reply -----------------------------------------------------------
-  observeEvent(input$reply_post, {
-    sel <- input$msg_table_rows_selected
-    req(sel, trimws(input$reply_text) != "")
-
-    mains <- msg_data()[is.na(msg_data()$parent_id) | msg_data()$parent_id == "", ]
-    target <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, ]
-
-    new_row <- data.frame(
-      timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
-      msg_id    = UUIDgenerate(),
-      parent_id = target$msg_id,
-      name      = trimws(input$mb_name),
-      email     = trimws(input$mb_email),
-      message   = gsub("\n", " ", input$reply_text),
-      stringsAsFactors = FALSE
-    )
-    append_row(new_row, message_file)
-
-    updateTextAreaInput(session, "reply_text", value = "")
-  })
-
-  # ---- display replies below table (optional) -------------------------------
-  # observe({
-  #   sel <- input$msg_table_dblclick                # <-- see section 2
-  #   if (is.null(sel)) return()
-  #
-  #   df      <- msg_data()
-  #   mains   <- df[is.na(df$parent_id) | df$parent_id == "", ]
-  #   target  <- mains[order(mains$timestamp, decreasing = TRUE), ][sel, "msg_id"]
-  #   replies <- df[df$parent_id == target, ]
-  #
-  #   showModal(modalDialog(
-  #     title = "Replies",
-  #     if (nrow(replies) == 0) {
-  #       tags$em("No replies yet.")
-  #     } else {
-  #       renderTable(replies[, c("timestamp", "name", "message")], rownames = FALSE)
-  #     },
-  #     easyClose = TRUE, size = "l"
-  #   ))
-  # })
-
-  observeEvent(input$msg_id_dblclick, {
-    req(input$msg_id_dblclick)
-
-    df      <- msg_data()
-    target  <- input$msg_id_dblclick
-
-    replies <- subset(df,
-                      parent_id == target &
-                        !is.na(timestamp) & trimws(timestamp) != "",
-                      select = c(timestamp, name, message))
-
-    showModal(modalDialog(
-      title = "Replies",
-      if (nrow(replies) == 0) {
-        tags$em("No replies yet.")
-      } else {
-        # give the table a class so our CSS hits it
-        tags$table(class = "modal-reply table table-striped",
-                   tags$thead(
-                     tags$tr(
-                       tags$th("TIMESTAMP"), tags$th("NAME"), tags$th("MESSAGE")
-                     )
-                   ),
-                   tags$tbody(
-                     lapply(seq_len(nrow(replies)), function(i) {
-                       tags$tr(
-                         tags$td(replies$timestamp[i]),
-                         tags$td(replies$name[i]),
-                         tags$td(replies$message[i])
-                       )
-                     })
-                   )
-        )
-      },
-      easyClose = TRUE, size = "l"
-    ))
-  })
-
-  # observe({
-  #   #yearBy <- input$year
-  #   radius <- 10000
-  #
-  #   leafletProxy("map", data = Site) %>%
-  #     addCircleMarkers(~Longitude, ~Latitude,
-  #                      stroke=FALSE, fillOpacity=0.8, color = ~pal(Site$TMR_CadTxR_c), popup = ~paste0("<i>",
-  #                                                                                                      Site$ENTIRE_NAME,
-  #                                                                                                      "</i>",
-  #                                                                                                      "<br/>",
-  #                                                                                                      "Deceased Donor Transplant Rate: ",
-  #                                                                                                      round(Site$TMR_CadTxR_c,3))) %>%
-  #     addLegend(pal = pal,
-  #               values = Site$TMR_CadTxR_c,
-  #               position = "bottomright",
-  #               title = "Deceased Donor Transplant Rate")
-  # })
-
-  ## 5. Outcome plot ----
-  # KP_2yr = readPNG("2yr Compare Version 2.png")
-  # output$KP_2yr = renderPlot(KP_2yr)
-  # RR_2yr = readPNG("RR 2yr Compare.png")
-  # output$RR_2yr = renderPlot(RR_2yr)
-  # ## 4. Raw data table ----
-  # output$raw_tbl <- renderDT(
-  #   tx_ki,
-  #   options = list(scrollX = TRUE, pageLength = 15, dom = "Blfrtip"),
-  #   filter = "top",
-  #   extensions = "Buttons"
-  # )
 }
 
 # -------------------- Run app ----------------------
