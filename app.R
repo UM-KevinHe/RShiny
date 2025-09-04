@@ -18,6 +18,34 @@ library(sf)
 library(htmltools)
 library(filelock)
 library(uuid)
+library(shinymanager)
+
+# app security values ----------------------------------------------------------
+inactivity <- "function idleTimer() {
+var t = setTimeout(logout, 120000);
+window.onmousemove = resetTimer; // catches mouse movements
+window.onmousedown = resetTimer; // catches mouse movements
+window.onclick = resetTimer;     // catches mouse clicks
+window.onscroll = resetTimer;    // catches scrolling
+window.onkeypress = resetTimer;  //catches keyboard actions
+
+function logout() {
+window.close();  //close the window
+}
+
+function resetTimer() {
+clearTimeout(t);
+t = setTimeout(logout, 120000);  // time is in milliseconds (1000 is 1 second)
+}
+}
+idleTimer();"
+
+# data.frame with credentials info
+credentials <- data.frame(
+  user = c("mkleinsa"),
+  password = c("cure2!#www"),
+  stringsAsFactors = FALSE
+)
 
 # webshot::install_phantomjs()
 
@@ -108,7 +136,13 @@ excel_path <- "data/csrs_final_tables_2505_KI.xls"
 sheet_list <- excel_sheets(excel_path)
 
 # -------------------- UI ---------------------------
-ui <- navbarPage(
+ui <- secure_app(navbarPage(
+  tags$head(
+    tags$style(
+      HTML(".shiny-output-error-validation{
+           color: red;}")
+    )
+  ),
   title = "Transplant Data Portal",
   theme = bs_theme(version = 5, bootswatch = "zephyr"),
 
@@ -323,10 +357,19 @@ ui <- navbarPage(
       <p>Contact: <a href='mailto:XXX@email'>XXX@email</a></p>
     ")
   )
-)
+))
 
 # -------------------- Server -----------------------
 server <- function(input, output, session) {
+
+  # app security server --------------------------------------------------------
+  result_auth <- secure_server(check_credentials = check_credentials(credentials))
+
+  output$res_auth <- renderPrint({
+    reactiveValuesToList(result_auth)
+  })
+  # app security server --------------------------------------------------------
+
 
   # Detect/prepare the screenshot backend once per session
   backend <- ensure_screenshot_backend()
