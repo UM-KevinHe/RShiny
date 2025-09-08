@@ -48,7 +48,6 @@ credentials <- data.frame(
 )
 
 # webshot::install_phantomjs()
-
 # ---- Screenshot backend bootstrap (runs once per R session) ----
 # Prefer webshot2 (no PhantomJS needed). If webshot2 is missing, fall back to
 # webshot + PhantomJS and install PhantomJS only when it's not present.
