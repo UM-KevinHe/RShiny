@@ -113,9 +113,9 @@ form_url_embed <- "https://docs.google.com/forms/d/e/1FAIpQLSfjD9MNAlupwUw8xYQ-e
 
 # -------------------- Load data --------------------
 
-center_data_1 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 1)
-center_data_2 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 5)
-center_data = data.frame(center_data_1,center_data_2)
+# center_data_1 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 1)
+# center_data_2 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 5)
+# center_data = data.frame(center_data_1,center_data_2)
 
 
 excel_path <- "data/csrs_final_tables_2505_KI.xls"
@@ -279,30 +279,30 @@ ui <- secure_app(navbarPage(
            )
   ),
 
-  # --- 6. Center Data -------------
-
-  tabPanel(
-    "Center Data",
-    sidebarLayout(
-      sidebarPanel(
-        ## drop-down that looks like a big button (optional shinyWidgets) ----
-        selectInput(
-          inputId  = "sheet",
-          label    = "Select worksheet",
-          choices  = sheet_list,
-          selected = sheet_list[1]
-        ),
-        width = 2
-      ),
-      mainPanel(
-        tabsetPanel(
-          tabPanel("Data table",   DTOutput("tbl")),
-          tabPanel("Summary",      verbatimTextOutput("summary")),
-          tabPanel("Histogram",    uiOutput("plot_ui"))
-        )
-      )
-    )
-  ),
+  # # --- 6. Center Data -------------
+  #
+  # tabPanel(
+  #   "Center Data",
+  #   sidebarLayout(
+  #     sidebarPanel(
+  #       ## drop-down that looks like a big button (optional shinyWidgets) ----
+  #       selectInput(
+  #         inputId  = "sheet",
+  #         label    = "Select worksheet",
+  #         choices  = sheet_list,
+  #         selected = sheet_list[1]
+  #       ),
+  #       width = 2
+  #     ),
+  #     mainPanel(
+  #       tabsetPanel(
+  #         tabPanel("Data table",   DTOutput("tbl")),
+  #         tabPanel("Summary",      verbatimTextOutput("summary")),
+  #         tabPanel("Histogram",    uiOutput("plot_ui"))
+  #       )
+  #     )
+  #   )
+  # ),
 
 
   # --- 7. Data Use Agreement ---
@@ -311,13 +311,13 @@ ui <- secure_app(navbarPage(
     fluidRow(
       column(
         width = 10, offset = 1,
-        h3("Data Use Agreement (Selected Clauses)"),
-        tags$p("The following clauses are reproduced verbatim:"),
+        h3("Data Use Agreement"),
+        tags$p("The following clauses are applied for research and analysis"),
         tags$ol(
-          tags$li(HTML('<strong>#9.</strong> Before submitting an abstract, manuscript, or other aggregation data to another party for presentation or publication, the Recipient must submit it to the SRTR and COR for review to ensure compliance with the terms of this agreement regarding confidentiality. The COR shall respond within 30 days. If the abstract, manuscript, or data aggregation does not reflect compliance with the terms of this agreement, the Recipient will revise and resubmit to the SRTR and COR. Upon publication, the Recipient shall provide a copy of the final work and a complete citation to the SRTR and COR.')),
-          tags$li(HTML('<strong>#12.</strong> All publications using the released Data must contain the standard disclaimer, ``The data reported here have been supplied by the Hennepin Healthcare Research Institute (HHRI) as the contractor for the Scientific Registry of Transplant Recipients (SRTR). The interpretation and reporting of these data are the responsibility of the author(s) and in no way should be seen as an official policy of or interpretation by the SRTR or the U.S. Government.\'\'')),
-          tags$li(HTML('<strong>#13.</strong>  All publications using the released Data must contain a statement confirming that the study was submitted to a functioning IRB for review and approval. The IRB determination status must be indicated in the text of any manuscript using the released Data.')),
-          tags$li(HTML('<strong>#14.</strong> All publications using the released Data must contain this standard statement within the methods section of the publication, ``This study used data from the Scientific Registry of Transplant Recipients (SRTR). The SRTR data system includes data on all donor, wait-listed candidates, and transplant recipients in the US, submitted by the members of the Organ Procurement and Transplantation Network (OPTN). The Health Resources and Services Administration (HRSA), U.S. Department of Health and Human Services provides oversight to the activities of the OPTN and SRTR contractors.\'\'')))
+          tags$li(HTML('Before submitting an abstract, manuscript, or other aggregation data to another party for presentation or publication, the Recipient must submit it to the SRTR and COR for review to ensure compliance with the terms of this agreement regarding confidentiality. The COR shall respond within 30 days. If the abstract, manuscript, or data aggregation does not reflect compliance with the terms of this agreement, the Recipient will revise and resubmit to the SRTR and COR. Upon publication, the Recipient shall provide a copy of the final work and a complete citation to the SRTR and COR.')),
+          tags$li(HTML('All publications using the released Data must contain the standard disclaimer, "The data reported here have been supplied by the Hennepin Healthcare Research Institute (HHRI) as the contractor for the Scientific Registry of Transplant Recipients (SRTR). The interpretation and reporting of these data are the responsibility of the author(s) and in no way should be seen as an official policy of or interpretation by the SRTR or the U.S. Government.\'\'')),
+          tags$li(HTML('All publications using the released Data must contain a statement confirming that the study was submitted to a functioning IRB for review and approval. The IRB determination status must be indicated in the text of any manuscript using the released Data.')),
+          tags$li(HTML('All publications using the released Data must contain this standard statement within the methods section of the publication, "This study used data from the Scientific Registry of Transplant Recipients (SRTR). The SRTR data system includes data on all donor, wait-listed candidates, and transplant recipients in the US, submitted by the members of the Organ Procurement and Transplantation Network (OPTN). The Health Resources and Services Administration (HRSA), U.S. Department of Health and Human Services provides oversight to the activities of the OPTN and SRTR contractors.\'\'')))
       )
     )
   ),
@@ -375,6 +375,8 @@ server <- function(input, output, session) {
   backend <- ensure_screenshot_backend()
 
   all_data = readRDS("data/center_data.rds")
+
+  vals <- reactiveValues(base = NULL, current = NULL)
 
   all_counties_2023 <- read_sas("data/all_counties_2023.sas7bdat.filepart")
   county_dsa <- all_counties_2023 %>%
@@ -646,104 +648,99 @@ server <- function(input, output, session) {
   })
 
   observe({
-    center_data = all_data %>% filter(time_period == input$period)
-    hist_opo_txc = read.csv("data/Center_opo.csv")
-    hist_opo_txc = hist_opo_txc %>% filter(Center.Code %in% center_data$CTR_CD)
-    hist_opo_txc = hist_opo_txc[,-1]
-    if (input$outcome == "Deceased Donor Transplant Rate"){
-      hist_opo_txc$Rate = center_data[match(hist_opo_txc$Center.Code,center_data$CTR_CD),]$TMR_CadTxR_o
-      center_data$Rate = as.numeric(center_data$TMR_CadTxR_c)
-      legend_text = c("DDKT Rate")
+    # --- Guard inputs to avoid NULL at startup ---
+    req(input$period, input$outcome)   # wait until inputs are available
+
+    # --- Sanity checks on data ---
+    validate(need("time_period" %in% names(all_data),
+                  "Column 'time_period' not found in all_data."))
+
+    # Filter by selected period; if no rows, stop early to avoid errors
+    center_data <- all_data %>% dplyr::filter(.data$time_period == input$period)
+    req(nrow(center_data) > 0)  # ensure we have data
+
+    # Read historical OPO-center mapping and keep matched centers only
+    hist_opo_txc <- read.csv("data/Center_opo.csv") %>%
+      dplyr::filter(Center.Code %in% center_data$CTR_CD)
+    hist_opo_txc <- hist_opo_txc[, -1, drop = FALSE]
+
+    # Set rates and legend text based on selected outcome
+    if (input$outcome == "Deceased Donor Transplant Rate") {
+      hist_opo_txc$Rate <- center_data[match(hist_opo_txc$Center.Code, center_data$CTR_CD), ]$TMR_CadTxR_o
+      center_data$Rate  <- as.numeric(center_data$TMR_CadTxR_c)
+      legend_text <- "DDKT Rate"
+    } else if (input$outcome == "Transplant Rate") {
+      hist_opo_txc$Rate <- center_data[match(hist_opo_txc$Center.Code, center_data$CTR_CD), ]$TMR_TxR_o
+      center_data$Rate  <- as.numeric(center_data$TMR_TxR_c)
+      legend_text <- "Tx Rate"
+    } else { # "Pre-transplant Mortality Rate"
+      hist_opo_txc$Rate <- center_data[match(hist_opo_txc$Center.Code, center_data$CTR_CD), ]$TMR_DthR_o
+      center_data$Rate  <- as.numeric(center_data$TMR_DthR_c)
+      legend_text <- "PreTx Dth Rate"
     }
-    else if (input$outcome == "Transplant Rate"){
-      hist_opo_txc$Rate = center_data[match(hist_opo_txc$Center.Code,center_data$CTR_CD),]$TMR_TxR_o
-      center_data$Rate = as.numeric(center_data$TMR_TxR_c)
-      legend_text = c("Tx Rate")
-    }
-    else if (input$outcome == "Pre-transplant Mortality Rate"){
-      hist_opo_txc$Rate = center_data[match(hist_opo_txc$Center.Code,center_data$CTR_CD),]$TMR_DthR_o
-      center_data$Rate = as.numeric(center_data$TMR_DthR_c)
-      legend_text = c("PreTx Dth Rate")
-    }
 
-    opo_map = readRDS("data/opo_map.rds")
-    opo_map$Rate = hist_opo_txc[match(opo_map$opo_ctr_cd,hist_opo_txc$Served.OPO.Code),]$Rate
-    opo_map$Rate = as.numeric(opo_map$Rate)
-    geo_info = read_xls("data/csrs_final_tables_22_11_KI.xls")
-    geo_info = geo_info[-1,] %>% select(CTR_CD,Latitude,Longitude)
-    center_data = merge(center_data,geo_info,by = "CTR_CD")
-
-    Site <- center_data
-    #Site <- merge(Site,center_data[,c("CTR_CD","TMR_CadTxR_c")],all.x = TRUE,by="CTR_CD")
-    Site$Latitude <- as.numeric(Site$Latitude)
-    Site$Longitude <- as.numeric(Site$Longitude)
-    # Site$TMR_CadTxR_c <- as.numeric(Site$TMR_CadTxR_c)
-    # Site$TMR_DthR_c <- as.numeric(Site$TMR_DthR_c)
-
-    output$map <- renderLeaflet({
-      pal = colorBin("YlOrRd", Site$Rate, bins = quantile(Site$Rate))
-      pal2 = colorBin("Greens", opo_map$Rate, bins = quantile(opo_map$Rate))
-      vals$base <- leaflet(options = leafletOptions(zoomSnap = 0.25, zoomDelta=0.25)) %>%
-        addProviderTiles(providers$CartoDB.Positron) %>%
-        addTiles() %>%
-        setView(lng = -93.85, lat = 37.45, zoom = 4.5) %>%
-        addPolygons(data = opo_map,
-                    color = 'black',
-                    weight = 2,
-                    smoothFactor = .3,
-                    fillOpacity = .5,
-                    fillColor = ~pal2(opo_map$Rate),
-                    popup = ~paste0("<i>",
-                                    opo_map$opo_ctr_cd,
-                                    "</i>",
-                                    "<br/>",
-                                    paste0(legend_text," (OPO) (per person-year): "),
-                                    round(opo_map$Rate,3))) %>%
-        addCircleMarkers(data = Site, ~Longitude, ~Latitude,
-                         stroke=FALSE, fillOpacity=0.8, color = ~pal(Site$Rate), popup = ~paste0("<i>",
-                                                                                                         Site$ENTIRE_NAME,
-                                                                                                         "</i>",
-                                                                                                         "<br/>",
-                                                                                                         paste0(legend_text," (Center) (per person-year): "),
-                                                                                                         round(Site$Rate,3))) %>%
-        # addMarkers(data = Site, ~Longitude, ~Latitude)%>%
-        addLegend(pal = pal,
-                  values = Site$Rate,
-                  position = "bottomright",
-                  title = paste0(legend_text," (OPO) (per person-year): ")) %>%
-        addLegend(pal = pal2,
-                  values = opo_map$Rate,
-                  position = "bottomleft",
-                  title = paste0(legend_text," (OPO) (per person-year): "))
-      #   addCircles(data=Site, ~Longitude, ~Latitude, radius=radius,
-      #              color="#ffa500", stroke=FALSE, fillOpacity=0.7)  %>%
-      # addLegend(pal = pal,
-      #           values = Site$TMR_CadTxR_c,
-      #           position = "bottomright",
-      #           title = "Transplant Rate (%)")
-    })
-
-    # reactive values to store map
-    vals <- reactiveValues()
-
-    observeEvent({
-      input$map_zoom
-      input$map_center
-    }, {
-      vals$current <- vals$base %>%
-        setView(lng = input$map_center$lng,
-                lat = input$map_center$lat,
-                zoom = input$map_zoom)
-    }
+    # OPO polygons and their rates
+    opo_map <- readRDS("data/opo_map.rds")
+    opo_map$Rate <- as.numeric(
+      hist_opo_txc$Rate[match(opo_map$opo_ctr_cd, hist_opo_txc$Served.OPO.Code)]
     )
 
+    # Center geo info
+    geo_info <- readxl::read_xls("data/csrs_final_tables_22_11_KI.xls")
+    geo_info <- geo_info[-1, c("CTR_CD","Latitude","Longitude")]
+    center_data <- merge(center_data, geo_info, by = "CTR_CD", all.x = TRUE)
+
+    # Prepare center points
+    Site <- center_data
+    Site$Latitude  <- as.numeric(Site$Latitude)
+    Site$Longitude <- as.numeric(Site$Longitude)
+
+    # --- Render map and cache base map in vals$base ---
+    output$map <- leaflet::renderLeaflet({
+      # Use na.rm=TRUE to avoid quantile() failing on NAs
+      pal  <- colorBin("YlOrRd", Site$Rate,   bins = quantile(Site$Rate,   na.rm = TRUE))
+      pal2 <- colorBin("Greens",  opo_map$Rate, bins = quantile(opo_map$Rate, na.rm = TRUE))
+
+      vals$base <- leaflet(options = leafletOptions(zoomSnap = 0.25, zoomDelta = 0.25)) %>%
+        addTiles() %>%
+        setView(lng = -93.85, lat = 37.45, zoom = 4.5) %>%
+        addPolygons(
+          data = opo_map, color = 'black', weight = 2, smoothFactor = .3,
+          fillOpacity = .5, fillColor = ~pal2(opo_map$Rate),
+          popup = ~paste0("<i>", opo_map$opo_ctr_cd, "</i><br/>",
+                          legend_text, " (OPO) (per person-year): ",
+                          round(opo_map$Rate, 3))
+        ) %>%
+        addCircleMarkers(
+          data = Site, ~Longitude, ~Latitude,
+          stroke = FALSE, fillOpacity = 0.8, color = ~pal(Site$Rate),
+          popup = ~paste0("<i>", Site$ENTIRE_NAME, "</i><br/>",
+                          legend_text, " (Center) (per person-year): ",
+                          round(Site$Rate, 3))
+        ) %>%
+        addLegend(pal = pal,  values = Site$Rate,  position = "bottomright",
+                  title = paste0(legend_text, " (Center) (per person-year): ")) %>% # fix caption
+        addLegend(pal = pal2, values = opo_map$Rate, position = "bottomleft",
+                  title = paste0(legend_text, " (OPO) (per person-year): "))
+
+      vals$base  # return the map
+    })
+
+    # Update cached map when user moves/zooms
+    observeEvent(list(input$map_zoom, input$map_center), {
+      req(vals$base)  # ensure map exists
+      vals$current <- vals$base %>%
+        setView(lng = input$map_center$lng, lat = input$map_center$lat, zoom = input$map_zoom)
+    })
+
+    # Download handler (prefer current view if available)
     output$dl <- downloadHandler(
       filename = "map.png",
       content = function(file) {
         if (backend %in% c("webshot2", "webshot")) {
-          # mapview::mapshot() will pick the available backend
+          map_to_save <- if (!is.null(vals$current)) vals$current else vals$base
           mapview::mapshot(
-            vals$current, file = file,
+            map_to_save, file = file,
             vwidth  = input$dimension[1] + 500,
             vheight = input$dimension[2] + 250,
             selfcontained = FALSE
@@ -756,7 +753,6 @@ server <- function(input, output, session) {
         }
       }
     )
-
   })
 
 
