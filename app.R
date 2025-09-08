@@ -85,9 +85,9 @@ form_url_embed <- "https://docs.google.com/forms/d/e/1FAIpQLSfjD9MNAlupwUw8xYQ-e
 
 # -------------------- Load data --------------------
 
-center_data_1 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 1)
-center_data_2 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 5)
-center_data = data.frame(center_data_1,center_data_2)
+# center_data_1 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 1)
+# center_data_2 = read_xls("data/csrs_final_tables_2505_KI.xls",sheet = 5)
+# center_data = data.frame(center_data_1,center_data_2)
 
 
 excel_path <- "data/csrs_final_tables_2505_KI.xls"
@@ -245,31 +245,31 @@ ui <- navbarPage(
            )
   ),
 
-  # --- 6. Center Data -------------
-
-  tabPanel(
-    "Center Data",
-    sidebarLayout(
-      sidebarPanel(
-        ## drop-down that looks like a big button (optional shinyWidgets) ----
-        selectInput(
-          inputId  = "sheet",
-          label    = "Select worksheet",
-          choices  = sheet_list,
-          selected = sheet_list[1]
-        ),
-        width = 2
-      ),
-      mainPanel(
-        tabsetPanel(
-          tabPanel("Data table",   DTOutput("tbl")),
-          tabPanel("Summary",      verbatimTextOutput("summary")),
-          tabPanel("Histogram",    uiOutput("plot_ui"))
-        )
-      )
-    )
-  ),
-
+  # # --- 6. Center Data -------------
+  #
+  # tabPanel(
+  #   "Center Data",
+  #   sidebarLayout(
+  #     sidebarPanel(
+  #       ## drop-down that looks like a big button (optional shinyWidgets) ----
+  #       selectInput(
+  #         inputId  = "sheet",
+  #         label    = "Select worksheet",
+  #         choices  = sheet_list,
+  #         selected = sheet_list[1]
+  #       ),
+  #       width = 2
+  #     ),
+  #     mainPanel(
+  #       tabsetPanel(
+  #         tabPanel("Data table",   DTOutput("tbl")),
+  #         tabPanel("Summary",      verbatimTextOutput("summary")),
+  #         tabPanel("Histogram",    uiOutput("plot_ui"))
+  #       )
+  #     )
+  #   )
+  # ),
+  #
 
   # --- 7. Data Use Agreement ---
   tabPanel(
@@ -277,13 +277,13 @@ ui <- navbarPage(
     fluidRow(
       column(
         width = 10, offset = 1,
-        h3("Data Use Agreement (Selected Clauses)"),
-        tags$p("The following clauses are reproduced verbatim:"),
+        h3("Data Use Agreement"),
+        tags$p("The following clauses are applied for research and analysis:"),
         tags$ol(
-          tags$li(HTML('<strong>#9.</strong> Before submitting an abstract, manuscript, or other aggregation data to another party for presentation or publication, the Recipient must submit it to the SRTR and COR for review to ensure compliance with the terms of this agreement regarding confidentiality. The COR shall respond within 30 days. If the abstract, manuscript, or data aggregation does not reflect compliance with the terms of this agreement, the Recipient will revise and resubmit to the SRTR and COR. Upon publication, the Recipient shall provide a copy of the final work and a complete citation to the SRTR and COR.')),
-          tags$li(HTML('<strong>#12.</strong> All publications using the released Data must contain the standard disclaimer, ``The data reported here have been supplied by the Hennepin Healthcare Research Institute (HHRI) as the contractor for the Scientific Registry of Transplant Recipients (SRTR). The interpretation and reporting of these data are the responsibility of the author(s) and in no way should be seen as an official policy of or interpretation by the SRTR or the U.S. Government.\'\'')),
-          tags$li(HTML('<strong>#13.</strong>  All publications using the released Data must contain a statement confirming that the study was submitted to a functioning IRB for review and approval. The IRB determination status must be indicated in the text of any manuscript using the released Data.')),
-          tags$li(HTML('<strong>#14.</strong> All publications using the released Data must contain this standard statement within the methods section of the publication, ``This study used data from the Scientific Registry of Transplant Recipients (SRTR). The SRTR data system includes data on all donor, wait-listed candidates, and transplant recipients in the US, submitted by the members of the Organ Procurement and Transplantation Network (OPTN). The Health Resources and Services Administration (HRSA), U.S. Department of Health and Human Services provides oversight to the activities of the OPTN and SRTR contractors.\'\'')))
+          tags$li(HTML('Before submitting an abstract, manuscript, or other aggregation data to another party for presentation or publication, the Recipient must submit it to the SRTR and COR for review to ensure compliance with the terms of this agreement regarding confidentiality. The COR shall respond within 30 days. If the abstract, manuscript, or data aggregation does not reflect compliance with the terms of this agreement, the Recipient will revise and resubmit to the SRTR and COR. Upon publication, the Recipient shall provide a copy of the final work and a complete citation to the SRTR and COR.')),
+          tags$li(HTML('All publications using the released Data must contain the standard disclaimer, ``The data reported here have been supplied by the Hennepin Healthcare Research Institute (HHRI) as the contractor for the Scientific Registry of Transplant Recipients (SRTR). The interpretation and reporting of these data are the responsibility of the author(s) and in no way should be seen as an official policy of or interpretation by the SRTR or the U.S. Government.\'\'')),
+          tags$li(HTML('All publications using the released Data must contain a statement confirming that the study was submitted to a functioning IRB for review and approval. The IRB determination status must be indicated in the text of any manuscript using the released Data.')),
+          tags$li(HTML('All publications using the released Data must contain this standard statement within the methods section of the publication, ``This study used data from the Scientific Registry of Transplant Recipients (SRTR). The SRTR data system includes data on all donor, wait-listed candidates, and transplant recipients in the US, submitted by the members of the Organ Procurement and Transplantation Network (OPTN). The Health Resources and Services Administration (HRSA), U.S. Department of Health and Human Services provides oversight to the activities of the OPTN and SRTR contractors.\'\'')))
       )
     )
   ),
