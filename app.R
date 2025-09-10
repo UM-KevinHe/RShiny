@@ -79,13 +79,35 @@ ensure_screenshot_backend <- function() {
 }
 
 
-safe_includeHTML <- function(path) {
+safe_includeHTML1 <- function(path) {
   html <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"),
                 collapse = "\n")
   # strip any bootstrap 3 link
   html <- gsub('<link[^>]*bootstrap[^>]*>', "", html, perl = TRUE)
   HTML(html)
 }
+
+# Drop global CSS from the embedded HTML to avoid clobbering Shiny theme.
+safe_includeHTML2 <- function(path) {
+  txt <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+
+  # 1) Keep only <body>...</body> content
+  body <- sub("(?is).*?<body[^>]*>", "", txt, perl = TRUE)
+  body <- sub("(?is)</body>.*$", "", body, perl = TRUE)
+
+  # 2) Remove any <style> blocks that would still be present
+  body <- gsub("(?is)<style[^>]*>.*?</style>", "", body, perl = TRUE)
+
+  # 3) Remove any stylesheet links that might be in body (some generators put them there)
+  body <- gsub("(?is)<link[^>]+rel=[\"']?stylesheet[^>]*>", "", body, perl = TRUE)
+
+  # (Optional) Remove bootstrap links just in case
+  body <- gsub("(?is)<link[^>]*bootstrap[^>]*>", "", body, perl = TRUE)
+
+  # 4) Wrap in a container so we can target local styles if needed
+  htmltools::HTML(sprintf('<div class="embedded-doc">%s</div>', body))
+}
+
 
 append_row <- function(df_row, file) {
   dir.create(dirname(file), showWarnings = FALSE, recursive = TRUE)
@@ -135,7 +157,8 @@ excel_path <- "data/csrs_final_tables_2505_KI.xls"
 sheet_list <- excel_sheets(excel_path)
 
 # -------------------- UI ---------------------------
-ui <- secure_app(navbarPage(
+ui <- #secure_app(
+  navbarPage(
   tags$head(
     tags$style(
       HTML(".shiny-output-error-validation{
@@ -172,7 +195,7 @@ ui <- secure_app(navbarPage(
 
   tabPanel(
     "Data Dictionary",
-    safe_includeHTML("www/dataDictionary_utf8.html")
+    safe_includeHTML1("www/dataDictionary_utf8.html")
   ),
 
   # --- 3. Outcome Definition ---
@@ -207,20 +230,28 @@ ui <- secure_app(navbarPage(
 
 
   # --- 4. KDPI and EPTS -------------
+  # tabPanel(
+  #   "KDPI and EPTS",
+  #   tags$head(
+  #     tags$script(src = "iframeResizer.min.js")
+  #   ),
+  #   tags$iframe(
+  #     src   = "KDPI-and-EPTS-html.html",
+  #     style = "width:100%; height:1100px; border:none;"
+  #   ),
+  #   # activate resizer
+  #   tags$script("iFrameResize({log:false, checkOrigin:false}, '#rep');")
+  # ),
+
   tabPanel(
     "KDPI and EPTS",
-    tags$head(
-      tags$script(src = "iframeResizer.min.js")
-    ),
-    tags$iframe(
-      src   = "KDPI-and-EPTS-html.html",
-      style = "width:100%; height:1100px; border:none;"
-    ),
-    # activate resizer
-    tags$script("iFrameResize({log:false, checkOrigin:false}, '#rep');")
+    fluidRow(
+      column(
+        width = 8, offset = 2,
+        safe_includeHTML2("www/KDPI-and-EPTS-html.html")
+      )
+    )
   ),
-
-
 
   # --- 5. Center Map -------------
 
@@ -350,23 +381,32 @@ ui <- secure_app(navbarPage(
 
 
   # --- 9. About ---
-  tabPanel("About",
-           HTML("
-      <p>This portal is maintained by XXX.</p>
-      <p>Contact: <a href='mailto:XXX@email'>XXX@email</a></p>
-    ")
+  tabPanel(
+    "About",
+    tagList(
+      tags$p("This portal is maintained by Joey Qiu and Lin Yin Guo."),
+      tags$p(
+        tags$b("Contact:"), tags$br(),
+        "Joey Qiu: ", tags$a("junyiqiu@umich.edu", href="mailto:junyiqiu@umich.edu"), tags$br(),
+        "Lin Yin Guo: ", tags$a("lguoah@umich.edu", href="mailto:lguoah@umich.edu")
+      )
+    )
   )
-))
+
+)
+#)
 
 # -------------------- Server -----------------------
 server <- function(input, output, session) {
 
   # app security server --------------------------------------------------------
-  result_auth <- secure_server(check_credentials = check_credentials(credentials))
 
-  output$res_auth <- renderPrint({
-    reactiveValuesToList(result_auth)
-  })
+  # result_auth <- secure_server(check_credentials = check_credentials(credentials))
+
+  # output$res_auth <- renderPrint({
+  #   reactiveValuesToList(result_auth)
+  # })
+
   # app security server --------------------------------------------------------
 
 

@@ -368,107 +368,119 @@ quality: the <strong>Kidney Donor Risk Index (KDRI)</strong> and the
 <div id="definition-and-purpose" class="section level3">
 <h3>1.2.1 Definition and Purpose</h3>
 <p>The KDRI is a continuous metric that quantifies the relative risk of
-graft failure, which was defined as return to dialysis, reâ€‘transplant,
+graft failure, which was defined as return to dialysis, re-transplant,
 or death, after kidney transplantation from a deceased donor. It
 provides a way to compare donor kidneys based on clinical and
 demographic factors.</p>
 </div>
 <div id="origin-and-reference" class="section level3">
 <h3>1.2.2 Origin and Reference</h3>
-<p>The KDRI model was first proposed by <strong>Rao
-etÂ al.Â (2009)</strong> in the journal <em>Transplantation</em><span class="math inline">\(^{1}\)</span>. It is based on a multivariable
-<strong>Cox proportional hazards model</strong> that estimated the
-hazard of graft loss or death after transplantation. Global model fit
-was calculated using discrimination (concordance = 0.6, also known as
-the C-statistic) and calibration (Integrated Brier score = 0.13).</p>
+<p>The KDRI model was first proposed by <strong>Rao et
+al. (2009)</strong> in the journal <em>Transplantation</em><sup>1</sup>.
+It is based on a multivariable <strong>Cox proportional hazards
+model</strong> that estimated the hazard of graft loss or death after
+transplantation. Global model fit was calculated using discrimination
+(concordance = 0.6, also known as the C-statistic) and calibration
+(Integrated Brier score = 0.13).</p>
 </div>
 <div id="model-formula" class="section level3">
 <h3>1.2.3 Model Formula</h3>
-<p>The stratified Cox model underlying the KDRI is</p>
-<p><span class="math display">\[
-h(t \mid \mathbf Z, s) \,=\, h_{0,s}(t)\,
-\exp(\boldsymbol\beta^{\!\top}\mathbf Z),
-\]</span></p>
+<p><math display="block"> <mrow> <mi>h</mi>
+<mo>(</mo><mi>t</mi><mo>|</mo><mi mathvariant="bold">Z</mi><mo>,</mo><mi>s</mi><mo>)</mo>
+<mo>=</mo> <msub> <mi>h</mi> <mrow><mn>0</mn><mo>,</mo><mi>s</mi></mrow>
+</msub> <mo>(</mo><mi>t</mi><mo>)</mo> <mo>⁢</mo> <mi>exp</mi> <mo>(</mo>
+<msup><mi>β</mi><mi>T</mi></msup> <mo>⋅</mo>
+<mi mathvariant="bold">Z</mi> <mo>)</mo> </mrow> </math></p>
 <p>where</p>
 <ul>
-<li><span class="math inline">\(\mathbf Z = (Z_1,\ldots,Z_p)\)</span> is
-the covariate vector for the <span class="math inline">\(p=8\)</span>
-donor factors listed in SectionÂ 1.2.4;</li>
-<li><span class="math inline">\(s\)</span> indexes the stratum
-determined by <strong>transplant centre</strong>, <strong>singleâ€‘year
-recipient age</strong>, and <strong>recipient diabetes status</strong>.
-(not straified by OPO)</li>
-<li><span class="math inline">\(h_{0,s}(t)\)</span> is the baseline
-hazard in stratumÂ <span class="math inline">\(s\)</span>.</li>
+<li><math><mi mathvariant="bold">Z</mi><mo>=</mo><mo>(</mo><msub><mi>Z</mi><mn>1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi>Z</mi><mi>p</mi></msub><mo>)</mo></math>
+is the covariate vector for the p = 8 donor factors listed in Section
+1.2.4;</li>
+<li><math><mi>s</mi></math> indexes the stratum determined by
+<strong>transplant centre</strong>, <strong>single-year recipient
+age</strong>, and <strong>recipient diabetes status</strong>. (not
+straified by OPO)</li>
+<li><math><msub><mi>h</mi><mrow><mn>0</mn><mo>,</mo><mi>s</mi></mrow></msub><mo>(</mo><mi>t</mi><mo>)</mo></math>
+is the baseline hazard in stratum s.</li>
 </ul>
-<p>Hence, the <strong>Kidney Donor Risk Index</strong> for donorÂ <span class="math inline">\(i\)</span> is</p>
-<p><span class="math display">\[
-\text{KDRI}_i\;=\;\frac{h(t\mid \mathbf Z_i)}{h(t\mid \mathbf
-Z_{\text{ref}})}
-    \,=\, \exp\!\Bigl\{\boldsymbol\beta^{\!\top}(\mathbf Z_i-\mathbf
-Z_{\text{ref}})\Bigr\}
-    \,=\,\prod_{j=1}^{p}
-\mathrm{HR}_j^{\,Z_{ij}-Z_{\text{ref},j}},\qquad \mathrm{HR}_j \equiv
-e^{\beta_j}.
-\]</span></p>
+<p>Hence, the <strong>Kidney Donor Risk Index</strong> for donor i
+is</p>
+<p><math display="block"> <mrow> <msub><mi>KDRI</mi><mi>i</mi></msub>
+<mo>=</mo> <mfrac>
+<mrow><mi>h</mi><mo>(</mo><mi>t</mi><mo>|</mo><msub><mi mathvariant="bold">Z</mi><mi>i</mi></msub><mo>)</mo></mrow>
+<mrow><mi>h</mi><mo>(</mo><mi>t</mi><mo>|</mo><msub><mi mathvariant="bold">Z</mi><mtext>ref</mtext></msub><mo>)</mo></mrow>
+</mfrac> <mo>=</mo> <mi>exp</mi> <mo>(</mo>
+<msup><mi>β</mi><mi>T</mi></msup> <mo>⋅</mo> <mo>(</mo>
+<msub><mi mathvariant="bold">Z</mi><mi>i</mi></msub> <mo>−</mo>
+<msub><mi mathvariant="bold">Z</mi><mtext>ref</mtext></msub> <mo>)</mo>
+<mo>)</mo> <mo>=</mo> <munderover> <mo>∏</mo>
+<mrow><mi>j</mi><mo>=</mo><mn>1</mn></mrow> <mi>p</mi> </munderover>
+<msup> <msub><mtext>HR</mtext><mi>j</mi></msub> <mrow>
+<msub><mi>Z</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub> <mo>−</mo>
+<msub><mi>Z</mi><mrow><mtext>ref</mtext><mo>,</mo><mi>j</mi></mrow></msub>
+</mrow> </msup> <mo>,</mo> <mspace width="0.5em"></mspace>
+<msub><mtext>HR</mtext><mi>j</mi></msub> <mo>≡</mo>
+<msup><mi>e</mi><msub><mi>β</mi><mi>j</mi></msub></msup> <mo>.</mo>
+</mrow> </math></p>
 </div>
 <div id="model-variables" class="section level3">
 <h3>1.2.4 Model Variables</h3>
-<p>RaoÂ <em>etÂ al.</em> initially included <strong>10 donor
+<p>Rao <em>et al.</em> initially included <strong>10 donor
 factors</strong>. In the current OPTN operational model (approved
-OctoberÂ 2024) this has been streamlined to <strong>8 donor
+October 2024) this has been streamlined to <strong>8 donor
 factors</strong>:</p>
 <ol style="list-style-type: decimal">
-<li>Donor ageÂ (yrs)</li>
-<li>Donor heightÂ (cm)</li>
-<li>Donor weightÂ (kg)</li>
-<li>History of hypertensionÂ (yes/no)</li>
-<li>History of diabetesÂ (yes/no)</li>
-<li>Cause of deathÂ (cerebrovascular accidentÂ vsÂ other)</li>
-<li>Serum creatinineÂ (mg/dL)</li>
+<li>Donor age (yrs)</li>
+<li>Donor height (cm)</li>
+<li>Donor weight (kg)</li>
+<li>History of hypertension (yes/no)</li>
+<li>History of diabetes (yes/no)</li>
+<li>Cause of death (cerebrovascular accident vs other)</li>
+<li>Serum creatinine (mg/dL)</li>
 <li>Donation after cardiac death (DCD, yes/no)</li>
 </ol>
-<p><em>Black race</em> and <em>hepatitisÂ C virus (HCV)
+<p><em>Black race</em> and <em>hepatitis C virus (HCV)
 seropositivity</em> were removed during the 2024 refit.</p>
 </div>
 <div id="model-dataset" class="section level3">
 <h3>1.2.5 Model Dataset</h3>
-<p>The latest refit used graft outcomes from <strong>50â€¯769</strong>
-adult, firstâ€‘time, deceasedâ€‘donor kidneyâ€‘alone transplants performed in
-the United States between <strong>2018Â andÂ 2021</strong> (followâ€‘up
-through JuneÂ 2024).</p>
+<p>The latest refit used graft outcomes from <strong>50 769</strong>
+adult, first-time, deceased-donor kidney-alone transplants performed in
+the United States between <strong>2018 and 2021</strong> (follow-up
+through June 2024). User can derive the same cohort in the
+<em>tx_ki</em> dataset of SRTR.</p>
 </div>
 <div id="reference-donor-definition" class="section level3">
 <h3>1.2.6 Reference Donor Definition</h3>
-<p>The <strong>reference donor</strong> (KDRIÂ =Â 1.0) has:</p>
+<p>The <strong>reference donor</strong> (KDRI = 1.0) has:</p>
 <ul>
-<li>AgeÂ 40Â yr</li>
-<li>HeightÂ 170Â cm</li>
-<li>WeightÂ <span class="math inline">\(\ge\)</span>Â 80Â kg</li>
+<li>Age 40 yr</li>
+<li>Height 170 cm</li>
+<li>Weight ≥ 80 kg</li>
 <li>No diabetes</li>
 <li>No hypertension</li>
 <li>Cause of death other than cerebrovascular accident</li>
-<li>Terminal creatinineÂ =Â 1.0Â mg/dL</li>
-<li>Brainâ€‘death donor (notÂ donation after cardiac death)</li>
+<li>Terminal creatinine = 1.0 mg/dL</li>
+<li>Brain-death donor (not donation after cardiac death)</li>
 </ul>
 <p>All other donors are compared against this reference profile.</p>
 <div style="page-break-after: always;"></div>
 </div>
 <div id="estimated-coefficients-optn-2024-c-statistics-0.6" class="section level3">
-<h3>1.2.7 Estimated Coefficients (OPTNÂ 2024, C-statistics = 0.6)</h3>
+<h3>1.2.7 Estimated Coefficients (OPTN 2024, C-statistics = 0.6)</h3>
 <table>
 <colgroup>
-<col width="28%" />
-<col width="20%" />
-<col width="15%" />
-<col width="35%" />
+<col width="30%" />
+<col width="23%" />
+<col width="18%" />
+<col width="27%" />
 </colgroup>
 <thead>
 <tr class="header">
 <th>Donor Factor</th>
 <th>Column Names (<em>tx_ki</em>)</th>
-<th>AppliesÂ toÂ Donors</th>
-<th><span class="math inline">\(\hat\beta\times\)</span>CovariateÂ Shift</th>
+<th>Applies to Donors</th>
+<th>beta-hat × Covariate Shift</th>
 </tr>
 </thead>
 <tbody>
@@ -476,31 +488,31 @@ through JuneÂ 2024).</p>
 <td>Age (yrs)</td>
 <td>DON_AGE</td>
 <td>All</td>
-<td>0.0092 Ã— (AgeÂ -Â 40)</td>
+<td>0.0092 × (Age - 40)</td>
 </tr>
 <tr class="even">
 <td></td>
 <td></td>
-<td>AgeÂ &lt;Â 18</td>
-<td>0.0113 Ã— (AgeÂ -Â 18)</td>
+<td>Age &lt; 18</td>
+<td>0.0113 × (Age - 18)</td>
 </tr>
 <tr class="odd">
 <td></td>
 <td></td>
-<td>AgeÂ &gt;Â 50</td>
-<td>0.0067 Ã— (AgeÂ -Â 50)</td>
+<td>Age &gt; 50</td>
+<td>0.0067 × (Age - 50)</td>
 </tr>
 <tr class="even">
 <td>Height (cm)</td>
 <td>DON_HGT_CM</td>
 <td>All</td>
-<td>-0.0557 Ã— (HgtÂ -Â 170)/10</td>
+<td>-0.0557 × (Hgt - 170)/10</td>
 </tr>
 <tr class="odd">
 <td>Weight (kg)</td>
 <td>DON_WGT_KG</td>
-<td>WeightÂ &lt;Â 80</td>
-<td>-0.0333 Ã— (WgtÂ -Â 80)/5</td>
+<td>Weight &lt; 80</td>
+<td>-0.0333 × (Wgt - 80)/5</td>
 </tr>
 <tr class="even">
 <td>History of hypertension</td>
@@ -515,7 +527,7 @@ through JuneÂ 2024).</p>
 <td>0.2577</td>
 </tr>
 <tr class="even">
-<td>Cause of deathÂ =Â CVA</td>
+<td>Cause of death = CVA</td>
 <td>DON_CAD_DON_COD</td>
 <td>Yes</td>
 <td>0.0743</td>
@@ -524,13 +536,13 @@ through JuneÂ 2024).</p>
 <td>Serum creatinine (mg/dL)</td>
 <td>DON_CREAT</td>
 <td>All</td>
-<td>0.2128 Ã— (CreatÂ -Â 1.0)</td>
+<td>0.2128 × (Creat - 1.0)</td>
 </tr>
 <tr class="even">
 <td></td>
 <td></td>
-<td>CreatÂ &gt;Â 1.5</td>
-<td>-0.2199 Ã— (CreatÂ -Â 1.5)</td>
+<td>Creat &gt; 1.5</td>
+<td>-0.2199 × (Creat - 1.5)</td>
 </tr>
 <tr class="odd">
 <td>DCD Status</td>
@@ -547,17 +559,17 @@ through JuneÂ 2024).</p>
 <h4>Old version of estimated model (Jul 2009)</h4>
 <table>
 <colgroup>
-<col width="28%" />
-<col width="20%" />
-<col width="15%" />
-<col width="35%" />
+<col width="30%" />
+<col width="23%" />
+<col width="18%" />
+<col width="27%" />
 </colgroup>
 <thead>
 <tr class="header">
 <th>Donor Factor</th>
 <th>Column Names (<em>tx_ki</em>)</th>
 <th>Applies to Donors</th>
-<th><span class="math inline">\(\hat\beta\times\)</span>CovariateÂ Shift</th>
+<th>beta-hat × Covariate Shift</th>
 </tr>
 </thead>
 <tbody>
@@ -565,31 +577,31 @@ through JuneÂ 2024).</p>
 <td>Age (yrs)</td>
 <td>DON_AGE</td>
 <td>All</td>
-<td>0.0128 Ã— (AgeÂ -Â 40)</td>
+<td>0.0128 × (Age - 40)</td>
 </tr>
 <tr class="even">
 <td></td>
 <td></td>
 <td>Age &lt; 18</td>
-<td>-0.0194 Ã— (AgeÂ -Â 18)</td>
+<td>-0.0194 × (Age - 18)</td>
 </tr>
 <tr class="odd">
 <td></td>
 <td></td>
 <td>Age &gt; 50</td>
-<td>0.0107 Ã— (AgeÂ -Â 50)</td>
+<td>0.0107 × (Age - 50)</td>
 </tr>
 <tr class="even">
 <td>Height (cm)</td>
 <td>DON_HGT_CM</td>
 <td>All</td>
-<td>-0.0464 Ã— (HgtÂ -Â 170)/10</td>
+<td>-0.0464 × (Hgt - 170)/10</td>
 </tr>
 <tr class="odd">
 <td>Weight (kg)</td>
 <td>DON_WGT_KG</td>
 <td>Weight &lt; 80</td>
-<td>-0.0199 Ã— (WgtÂ -Â 80)/5</td>
+<td>-0.0199 × (Wgt - 80)/5</td>
 </tr>
 <tr class="even">
 <td>Ethnicity</td>
@@ -619,13 +631,13 @@ through JuneÂ 2024).</p>
 <td>Serum creatinine (mg/dL)</td>
 <td>DON_CREAT</td>
 <td>All</td>
-<td>0.2200 Ã— (CreatÂ -Â 1.0)</td>
+<td>0.2200 × (Creat - 1.0)</td>
 </tr>
 <tr class="odd">
 <td></td>
 <td></td>
 <td>Creat &gt; 1.5</td>
-<td>-0.2090 Ã— (CreatÂ -Â 1.5)</td>
+<td>-0.2090 × (Creat - 1.5)</td>
 </tr>
 <tr class="even">
 <td>HCV positive</td>
@@ -647,9 +659,9 @@ through JuneÂ 2024).</p>
 <h3>1.2.8 Model History</h3>
 <table>
 <colgroup>
-<col width="11%" />
-<col width="15%" />
-<col width="48%" />
+<col width="8%" />
+<col width="29%" />
+<col width="38%" />
 <col width="23%" />
 </colgroup>
 <thead>
@@ -663,10 +675,10 @@ through JuneÂ 2024).</p>
 <tbody>
 <tr class="odd">
 <td>Jul, 2009</td>
-<td>Original KDRI (RaoÂ etÂ al.)</td>
-<td>14â€‘factor Cox model on 1995â€“2005 data; 10â€‘factor donorâ€‘only version
+<td>Original KDRI (Rao et al.)</td>
+<td>14-factor Cox model on 1995–2005 data; 10-factor donor-only version
 for allocation.</td>
-<td><strong>Adopted</strong><span class="math inline">\(^{1}\)</span></td>
+<td><strong>Adopted</strong><sup>1</sup></td>
 </tr>
 <tr class="even">
 <td>Dec, 2014</td>
@@ -678,14 +690,14 @@ refit.</td>
 <tr class="odd">
 <td>Aug, 2019</td>
 <td>Academic reevaluation</td>
-<td>Reâ€‘estimated on 2000â€“2016 data; minimal performance gain; not
+<td>Re-estimated on 2000–2016 data; minimal performance gain; not
 adopted.</td>
 <td>Not adopted</td>
 </tr>
 <tr class="even">
 <td>Oct, 2024</td>
 <td><strong>Refit KDRI</strong></td>
-<td>Refit on 2018â€“2021 data; removed race &amp;Â HCV; updated KDPI
+<td>Refit on 2018–2021 data; removed race &amp; HCV; updated KDPI
 mapping.</td>
 <td><strong>Adopted</strong></td>
 </tr>
@@ -698,51 +710,50 @@ mapping.</td>
 </div>
 <div id="applicability" class="section level3">
 <h3>1.2.10 Applicability</h3>
-<p>KDRI applies only to <strong>deceased donors</strong>. Livingâ€‘donor
+<p>KDRI applies only to <strong>deceased donors</strong>. Living-donor
 analogues such as the <strong>Living Kidney Donor Profile Index
-(LKDPI)</strong><span class="math inline">\(^{5}\)</span> are
-<em>not</em> used for allocation.</p>
+(LKDPI)</strong><sup>5</sup> are <em>not</em> used for allocation.</p>
 </div>
 </div>
 <div id="the-kidney-donor-profile-index-kdpi" class="section level2">
 <h2>1.3 The Kidney Donor Profile Index (KDPI)</h2>
 <div id="definition" class="section level3">
 <h3>1.3.1 Definition</h3>
-<p>KDPI is defined as the <strong>percentile rank (0â€“100%)</strong> of a
-donor kidneyâ€™s Scaled KDRI against the U.S. donor pool from the previous
+<p>KDPI is defined as the <strong>percentile rank (0–100%)</strong> of a
+donor kidney’s Scaled KDRI against the U.S. donor pool from the previous
 calendar year.</p>
 </div>
 <div id="calculation" class="section level3">
 <h3>1.3.2 Calculation</h3>
 <p>First calaulate the Scaled KDRI using the following formular.</p>
-<p><span class="math display">\[
-\mathrm{KDRI}_{\text{SCALED}} =
-\frac{\mathrm{KDRI}_{\text{RAO}}}{\text{scaling factor}}
-\]</span></p>
-<p>The â€œscaling factorâ€ is the median <span class="math inline">\(\mathrm{KDRI}_{\text{RAO}}\)</span> value among
+<p><math display="block"> <mrow>
+<msub><mi>KDRI</mi><mtext>SCALED</mtext></msub> <mo>=</mo> <mfrac>
+<msub><mi>KDRI</mi><mtext>RAO</mtext></msub> <mtext>scaling
+factor</mtext> </mfrac> </mrow> </math></p>
+<p>The “scaling factor” is the median
+<math><msub><mi>KDRI</mi><mtext>RAO</mtext></msub></math> value among
 all kidney donors recovered during the previous calendar year
-(e.g.Â <em>scaling factor</em> = 1.404 in 2024).</p>
-<p>Let <span class="math inline">\(F_{\text{year}}\)</span> be the
+(e.g. scaling factor = 1.404 in 2024).</p>
+<p>Let <math><msub><mi>F</mi><mtext>year</mtext></msub></math> be the
 empirical cumulative distribution function (CDF) of Scaled KDRI values
-for deceased donors in a given reference year. Then</p>
-<p><span class="math inline">\(\text{KDPI} = 100\% \times
-F_{\text{year}}(\mathrm{KDRI}_{\text{SCALED}}).\)</span></p>
+for deceased donors in a given reference year. Then
+<math><mi>KDPI</mi><mo>=</mo><mn>100</mn><mo>%</mo><mo>×</mo><msub><mi>F</mi><mtext>year</mtext></msub><mo>(</mo><msub><mi>KDRI</mi><mtext>SCALED</mtext></msub><mo>)</mo></math>.</p>
 </div>
 <div id="annual-reference-distribution" class="section level3">
 <h3>1.3.3 Annual Reference Distribution</h3>
 <ul>
 <li>The 2024 OPTN guide illustrates KDPI using <strong>2022</strong>
-donor data<span class="math inline">\(^{2}\)</span>.</li>
+donor data<sup>2</sup>.</li>
 <li>The most recent public mapping file is based on
-<strong>2023</strong> donors<span class="math inline">\(^{3}\)</span>.</li>
+<strong>2023</strong> donors<sup>3</sup>.</li>
 </ul>
-<p>Hence KDPI reflects yearâ€‘toâ€‘year changes in donor risk.</p>
+<p>Hence KDPI reflects year-to-year changes in donor risk.</p>
 </div>
 <div id="worked-example" class="section level3">
 <h3>1.3.4 Worked Example</h3>
-<p>A donor with <strong>KDRIÂ =Â 1.51</strong> lies at the <strong>90th
-percentile</strong> of the 2023 donor distribution :
-<strong>KDPIÂ =Â 90%</strong>.</p>
+<p>A donor with <strong>KDRI = 1.51</strong> lies at the <strong>90th
+percentile</strong> of the 2023 donor distribution : <strong>KDPI =
+90%</strong>.</p>
 </div>
 <div id="evaluation-of-kdpi-c-index" class="section level3">
 <h3>1.3.5 Evaluation of KDPI (C-Index)</h3>
@@ -751,54 +762,59 @@ percentile</strong> of the 2023 donor distribution :
 </div>
 </div>
 </div>
-<div id="epts-estimated-posttransplant-survival-score" class="section level1">
-<h1>2. EPTS: Estimated Postâ€‘Transplant Survival Score</h1>
+<div id="epts-estimated-post-transplant-survival-score" class="section level1">
+<h1>2. EPTS: Estimated Post-Transplant Survival Score</h1>
 <div id="definition-and-purpose-1" class="section level2">
 <h2>2.1 Definition and Purpose</h2>
-<p>The <strong>Estimated Postâ€‘Transplant Survival (EPTS)</strong> score
-(0â€“100%) estimates how long a candidate is expected to live after
+<p>The <strong>Estimated Post-Transplant Survival (EPTS)</strong> score
+(0–100%) estimates how long a candidate is expected to live after
 transplantation. Lower scores imply longer expected survival. Kidneys
-with <strong>KDPIÂ <span class="math inline">\(\le\)</span>Â 20%</strong>
-are offered first to candidates with <strong>EPTSÂ <span class="math inline">\(\le\)</span>Â 20%</strong>.</p>
+with <strong>KDPI ≤ 20%</strong> are offered first to candidates with
+<strong>EPTS ≤ 20%</strong>.</p>
 </div>
 <div id="origin" class="section level2">
 <h2>2.2 Origin</h2>
 <p>Developed by the <strong>Scientific Registry of Transplant Recipients
-(SRTR)</strong> for the OPTN Kidney Committee<span class="math inline">\(^{4}\)</span>.</p>
+(SRTR)</strong> for the OPTN Kidney Committee<sup>4</sup>.</p>
 </div>
 <div id="usage-conditions" class="section level2">
 <h2>2.3 Usage Conditions</h2>
 <ul>
-<li>Applies only to adult candidates (<span class="math inline">\(\ge\)</span>â€¯18â€¯yr).</li>
-<li>Priority rule: <strong>KDPIÂ <span class="math inline">\(\le\)</span>â€¯20%</strong> kidneys â†’ candidates
-with <strong>EPTSÂ <span class="math inline">\(\le\)</span>â€¯20%</strong>.</li>
+<li>Applies only to adult candidates (≥ 18 yr).</li>
+<li>Priority rule: <strong>KDPI ≤ 20%</strong> kidneys → candidates with
+<strong>EPTS ≤ 20%</strong>.</li>
 </ul>
 </div>
 <div id="raw-epts-formula" class="section level2">
 <h2>2.4 Raw EPTS Formula</h2>
-<p><span class="math display">\[
-\begin{aligned}
-\text{Raw EPTS} =\ &amp; 0.047 \times \max(\text{Age} - 25,\ 0) - 0.015
-\times \text{Diabetes} \times \max(\text{Age} - 25,\ 0) \\
-&amp; + 0.398 \times \text{Prior Solid Organ Transplant}  - 0.237 \times
-\text{Diabetes} \times \text{Prior Organ Transplant} \\
-&amp; + 0.315 \times \log(\text{Years on Dialysis} + 1)  - 0.099 \times
-\text{Diabetes} \times \log(\text{Years on Dialysis} + 1) \\
-&amp; + 0.130 \times I(\text{Years on Dialysis} = 0) - 0.348 \times
-\text{Diabetes} \times I(\text{Years on Dialysis} = 0)  + 1.262 \times
-\text{Diabetes}
-\end{aligned}
-\]</span></p>
+<p><math display="block"> <mrow> <mtext>Raw EPTS</mtext> <mo>=</mo>
+<mn>0.047</mn><mo>×</mo>
+<mi>max</mi><mo>(</mo><mtext>Age</mtext><mo>−</mo><mn>25</mn><mo>,</mo><mn>0</mn><mo>)</mo>
+<mo>−</mo> <mn>0.015</mn><mo>×</mo><mtext>Diabetes</mtext><mo>×</mo>
+<mi>max</mi><mo>(</mo><mtext>Age</mtext><mo>−</mo><mn>25</mn><mo>,</mo><mn>0</mn><mo>)</mo>
+<mo>+</mo> <mn>0.398</mn><mo>×</mo><mtext>Prior Solid Organ
+Transplant</mtext> <mo>−</mo>
+<mn>0.237</mn><mo>×</mo><mtext>Diabetes</mtext><mo>×</mo><mtext>Prior
+Organ Transplant</mtext> <mo>+</mo>
+<mn>0.315</mn><mo>×</mo><mi>log</mi><mo>(</mo><mtext>Years on
+Dialysis</mtext><mo>+</mo><mn>1</mn><mo>)</mo> <mo>−</mo>
+<mn>0.099</mn><mo>×</mo><mtext>Diabetes</mtext><mo>×</mo><mi>log</mi><mo>(</mo><mtext>Years
+on Dialysis</mtext><mo>+</mo><mn>1</mn><mo>)</mo> <mo>+</mo>
+<mn>0.130</mn><mo>×</mo><mi>I</mi><mo>(</mo><mtext>Years on
+Dialysis</mtext><mo>=</mo><mn>0</mn><mo>)</mo> <mo>−</mo>
+<mn>0.348</mn><mo>×</mo><mtext>Diabetes</mtext><mo>×</mo><mi>I</mi><mo>(</mo><mtext>Years
+on Dialysis</mtext><mo>=</mo><mn>0</mn><mo>)</mo> <mo>+</mo>
+<mn>1.262</mn><mo>×</mo><mtext>Diabetes</mtext> </mrow> </math></p>
 <ul>
 <li><p><code>log()</code> denotes the natural logarithm.</p></li>
-<li><p>IndicatorÂ <span class="math inline">\(I(\cdot)\)</span> equalsÂ 1
-if the condition is true, otherwiseÂ 0.</p></li>
-<li><p>Binary covariates <code>Diabetes</code> and <code>PriorÂ Tx</code>
-take valueÂ 1 when present andÂ 0 otherwise.</p></li>
+<li><p>Indicator <math><mi>I</mi><mo>(</mo><mo>⋅</mo><mo>)</mo></math>
+equals 1 if the condition is true, otherwise 0.</p></li>
+<li><p>Binary covariates <code>Diabetes</code> and <code>Prior Tx</code>
+take value 1 when present and 0 otherwise.</p></li>
 </ul>
 <p>The final <strong>EPTS score</strong> is the percentile of the raw
-score within the national adult waitâ€‘list on
-<strong>31â€¯DecÂ 2023</strong> (updated annually).</p>
+score within the national adult wait-list on <strong>31 Dec
+2023</strong> (updated annually).</p>
 </div>
 <div id="model-variables-1" class="section level2">
 <h2>2.5 Model Variables</h2>
@@ -809,16 +825,16 @@ transplant history</strong>, and <strong>dialysis duration</strong>.</p>
 <div id="model-history-1" class="section level2">
 <h2>2.6 Model History</h2>
 <p>OPTN is exploring a <strong>Composite Allocation Score (CAS)</strong>
-that aggregates ten attributesâ€”KDPI/EPTS matching, waiting time,
-geography, HLA, etc.â€”into a single 0â€“100 scale.</p>
+that aggregates ten attributes—KDPI/EPTS matching, waiting time,
+geography, HLA, etc.—into a single 0–100 scale.</p>
 </div>
 <div id="interpretation" class="section level2">
 <h2>2.7 Interpretation</h2>
 <ul>
-<li>EPTSÂ =Â 0%Â : longest expected survival</li>
-<li>EPTSÂ =Â 100%Â : shortest expected survival</li>
-<li><strong>EPTSÂ <span class="math inline">\(\le\)</span>â€¯20%</strong>
-triggers priority for <strong>KDPIÂ <span class="math inline">\(\le\)</span>â€¯20%</strong> kidneys.</li>
+<li>EPTS = 0% : longest expected survival</li>
+<li>EPTS = 100% : shortest expected survival</li>
+<li><strong>EPTS ≤ 20%</strong> triggers priority for <strong>KDPI ≤
+20%</strong> kidneys.</li>
 </ul>
 <div id="k-m-survival-plot-by-epts-from-optn" class="section level3">
 <h3>2.8 K-M Survival Plot by EPTS from OPTN</h3>
@@ -830,65 +846,33 @@ triggers priority for <strong>KDPIÂ <span class="math inline">\(\le\)</span>â
 <h1>References</h1>
 <blockquote>
 <ol style="list-style-type: decimal">
-<li>Rao PS, Schaubel DE, Guidinger MK, et al.Â A Comprehensive Risk
+<li><p>Rao PS, Schaubel DE, Guidinger MK, et al. A Comprehensive Risk
 Quantification Score for Deceased Donor Kidneys: The Kidney Donor Risk
-Index. <em>Transplantation</em>. 2009;88(2):231-236.</li>
-</ol>
-</blockquote>
-<blockquote>
-<ol start="2" style="list-style-type: decimal">
-<li>OPTN. A Guide to Calculating and Interpreting the Kidney Donor
-Profile Index (KDPI). Updated: October 10, 2024. <a href="https://optn.transplant.hrsa.gov/media/j34dm4mv/kdpi_guide.pdf" class="uri">https://optn.transplant.hrsa.gov/media/j34dm4mv/kdpi_guide.pdf</a></li>
-</ol>
-</blockquote>
-<blockquote>
-<ol start="3" style="list-style-type: decimal">
-<li>OPTN. KDRI to KDPI Mapping Table. <a href="https://optn.transplant.hrsa.gov/media/wnmnxxzu/kdpi_mapping_table.pdf" class="uri">https://optn.transplant.hrsa.gov/media/wnmnxxzu/kdpi_mapping_table.pdf</a></li>
-</ol>
-</blockquote>
-<blockquote>
-<ol start="4" style="list-style-type: decimal">
-<li>OPTN. A Guide to Calculating and Interpreting the Estimated
+Index. <em>Transplantation</em>. 2009;88(2):231-236.</p></li>
+<li><p>OPTN. A Guide to Calculating and Interpreting the Kidney Donor
+Profile Index (KDPI). Updated: October 10, 2024. <a href="https://optn.transplant.hrsa.gov/media/j34dm4mv/kdpi_guide.pdf" class="uri">https://optn.transplant.hrsa.gov/media/j34dm4mv/kdpi_guide.pdf</a></p></li>
+<li><p>OPTN. KDRI to KDPI Mapping Table. <a href="https://optn.transplant.hrsa.gov/media/wnmnxxzu/kdpi_mapping_table.pdf" class="uri">https://optn.transplant.hrsa.gov/media/wnmnxxzu/kdpi_mapping_table.pdf</a></p></li>
+<li><p>OPTN. A Guide to Calculating and Interpreting the Estimated
 Post-Transplant Survival (EPTS) Score Used in the Kidney Allocation
-System (KAS). Updated: April 17, 2024. <a href="https://optn.transplant.hrsa.gov/media/pn1pt2bc/epts_guide.pdf" class="uri">https://optn.transplant.hrsa.gov/media/pn1pt2bc/epts_guide.pdf</a></li>
-</ol>
-</blockquote>
-<blockquote>
-<ol start="5" style="list-style-type: decimal">
-<li>Massie, A. B., Leanza, J., Fahmy, L. M., Chow, E. K., Desai, N. M.,
-Luo, X., King, E. A., Bowring, M. G., &amp; Segev, D. L. (2016). A Risk
-Index for Living Donor Kidney Transplantation. American journal of
+System (KAS). Updated: April 17, 2024. <a href="https://optn.transplant.hrsa.gov/media/pn1pt2bc/epts_guide.pdf" class="uri">https://optn.transplant.hrsa.gov/media/pn1pt2bc/epts_guide.pdf</a></p></li>
+<li><p>Massie, A. B., Leanza, J., Fahmy, L. M., Chow, E. K., Desai, N.
+M., Luo, X., King, E. A., Bowring, M. G., &amp; Segev, D. L. (2016). A
+Risk Index for Living Donor Kidney Transplantation. American journal of
 transplantation : official journal of the American Society of
 Transplantation and the American Society of Transplant Surgeons, 16(7),
-2077â€“2084. <a href="https://doi.org/10.1111/ajt.13709" class="uri">https://doi.org/10.1111/ajt.13709</a></li>
-</ol>
-</blockquote>
-<blockquote>
-<ol start="6" style="list-style-type: decimal">
-<li>OPTN Minority Affairs Committee. Refit kidney donor profile index
+2077–2084. <a href="https://doi.org/10.1111/ajt.13709" class="uri">https://doi.org/10.1111/ajt.13709</a></p></li>
+<li><p>OPTN Minority Affairs Committee. Refit kidney donor profile index
 without race and hepatitis C virus. Published online 2024. Organ
-Procurement and Transplantation Network. Accessed October 9, 2024. <a href="https://optn.transplant.hrsa.gov/media/0zamk0dr/mac_kdpi_board-briefing-paper.pdf" class="uri">https://optn.transplant.hrsa.gov/media/0zamk0dr/mac_kdpi_board-briefing-paper.pdf</a></li>
-</ol>
-</blockquote>
-<blockquote>
-<ol start="7" style="list-style-type: decimal">
-<li>Zhong, Y., Schaubel, D. E., Kalbfleisch, J. D., Ashby, V. B., Rao,
-P. S., &amp; Sung, R. S. (2019). Reevaluation of the Kidney Donor Risk
-Index. Transplantation, 103(8), 1714â€“1721. <a href="https://doi.org/10.1097/TP.0000000000002498" class="uri">https://doi.org/10.1097/TP.0000000000002498</a></li>
-</ol>
-</blockquote>
-<blockquote>
-<ol start="8" style="list-style-type: decimal">
-<li>OPTN. EPTS Mapping Table. <a href="https://optn.transplant.hrsa.gov/media/g3xfajp4/epts_mapping_table.pdf" class="uri">https://optn.transplant.hrsa.gov/media/g3xfajp4/epts_mapping_table.pdf</a></li>
-</ol>
-</blockquote>
-<blockquote>
-<ol start="9" style="list-style-type: decimal">
-<li>Snyder, J. J., Salkowski, N., Kim, S. J., Zaun, D., Xiong, H.,
+Procurement and Transplantation Network. Accessed October 9, 2024. <a href="https://optn.transplant.hrsa.gov/media/0zamk0dr/mac_kdpi_board-briefing-paper.pdf" class="uri">https://optn.transplant.hrsa.gov/media/0zamk0dr/mac_kdpi_board-briefing-paper.pdf</a></p></li>
+<li><p>Zhong, Y., Schaubel, D. E., Kalbfleisch, J. D., Ashby, V. B.,
+Rao, P. S., &amp; Sung, R. S. (2019). Reevaluation of the Kidney Donor
+Risk Index. Transplantation, 103(8), 1714–1721. <a href="https://doi.org/10.1097/TP.0000000000002498" class="uri">https://doi.org/10.1097/TP.0000000000002498</a></p></li>
+<li><p>OPTN. EPTS Mapping Table. <a href="https://optn.transplant.hrsa.gov/media/g3xfajp4/epts_mapping_table.pdf" class="uri">https://optn.transplant.hrsa.gov/media/g3xfajp4/epts_mapping_table.pdf</a></p></li>
+<li><p>Snyder, J. J., Salkowski, N., Kim, S. J., Zaun, D., Xiong, H.,
 Israni, A. K., &amp; Kasiske, B. L. (2016). Developing Statistical
 Models to Assess Transplant Outcomes Using National Registries: The
-Process in the United States. <em>Transplantation</em>, 100(2), 288â€“294.
-<a href="https://doi.org/10.1097/TP.0000000000000891" class="uri">https://doi.org/10.1097/TP.0000000000000891</a></li>
+Process in the United States. <em>Transplantation</em>, 100(2), 288–294.
+<a href="https://doi.org/10.1097/TP.0000000000000891" class="uri">https://doi.org/10.1097/TP.0000000000000891</a></p></li>
 </ol>
 </blockquote>
 </div>
